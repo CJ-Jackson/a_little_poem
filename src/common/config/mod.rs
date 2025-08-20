@@ -3,12 +3,14 @@ use error_stack::{Report, ResultExt};
 use figment::providers::{Format, Serialized, Toml};
 use figment::{Figment, Profile};
 use serde::{Deserialize, Serialize};
+use sqlite::SqliteConfig;
 use std::env::var;
 use std::sync::{Arc, Weak};
 use thiserror::Error;
 use tokio::sync::OnceCell;
 
 pub mod poem;
+pub mod sqlite;
 
 #[derive(Debug, Error)]
 pub enum ConfigError {
@@ -19,12 +21,14 @@ pub enum ConfigError {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Config {
     pub poem: Arc<PoemConfig>,
+    pub sqlite: Arc<SqliteConfig>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             poem: Arc::new(PoemConfig::default()),
+            sqlite: Arc::new(SqliteConfig::default()),
         }
     }
 }

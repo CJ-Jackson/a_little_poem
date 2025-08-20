@@ -13,3 +13,6 @@ serde_json = "1.0.143"
 figment = { version = "0.10.19", features = ["toml"] }
 tokio = { version = "1.47.1", features = ["full"] }
 maud = { version = "0.27.0", features = ["poem"] }
+rusqlite = { version = "0.37.0", features = ["chrono"] }
+argon2 = "0.5.3"
+rmp-serde = "1.3.0"
