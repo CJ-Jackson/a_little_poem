@@ -1,3 +1,4 @@
+use crate::common::cache_local::init_once_cell;
 use crate::common::config::Config;
 use crate::common::html::css::route_css;
 use crate::home::route_home;
@@ -34,13 +35,13 @@ async fn main() -> Result<(), Report<MainError>> {
     let route = route_css(route);
     let route = route_home(route);
 
-    let app = route.with(CookieJarManager::new());
+    let route = route.with(CookieJarManager::new());
 
     match config.upgrade() {
         Some(config) => {
             println!("Listening on http://{}", config.poem.parse_address());
             Server::new(TcpListener::bind(config.poem.parse_address().as_str()))
-                .run(app)
+                .run(route)
                 .await
                 .change_context(MainError::IoError)
         }
