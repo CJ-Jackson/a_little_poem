@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@layer components {
+    h1 {
+        font-size: var(--text-2xl--line-height);
+        font-weight: var(--font-weight-semibold);
+    }
+
+    h2 {
+        font-size: var(--text-xl);
+        font-weight: var(--font-weight-semibold);
+    }
+
+    .btn {
+        @apply flex font-bold py-2 px-4 rounded justify-center items-center;
+
+        svg {
+            @apply inline-block max-h-4 max-w-4 ml-1;
+        }
+    }
+
+    .btn-sky-blue {
+        @apply bg-sky-500 hover:bg-sky-700 text-white;
+    }
+
+    .ul-bullet {
+        list-style: disc;
+    }
+}
+
+[v-cloak] {
+    display: none;
+}
+
+body {
+    @apply bg-blue-400 dark:bg-blue-950;
+}
+
+.nav-content {
+    @apply flex bg-white dark:bg-gray-800 dark:text-white mb-3 px-7 py-7 mx-auto sticky top-0 left-0 right-0 z-10;
+
+    .nav-home {
+        @apply flex-3 font-bold text-left;
+    }
+
+    .nav-item {
+        @apply flex-1 text-center;
+    }
+
+    .nav-item-active {
+        @apply text-sky-500;
+    }
+
+    .nav-user {
+        @apply flex-3 text-right;
+    }
+}
+
+.main-content {
+    @apply bg-white rounded-2xl dark:bg-gray-800 dark:text-white mt-3 px-7 py-7 mx-auto;
+}
+
+.bucket-list-item, .bucket-list-header, .bucket-form, .bucket-form-error {
+    @apply flex mb-1;
+
+    .bucket-list-col {
+        @apply flex-1 mx-1;
+    }
+}
+
+.bucket-list-header {
+    @apply font-bold;
+}
+
+.bucket-form input {
+    @apply border border-gray-200 p-3 rounded-2xl;
+}
+
+.bucket-form-error {
+    @apply text-red-500;
+}
+
+.flash-message {
+    @apply fixed bottom-0 left-0 right-0 text-white p-4 text-center z-10;
+}
+
+.flash-message-success {
+    @apply bg-green-500;
+}
+
+.flash-message-error {
+    @apply bg-red-500;
+}
+
+.flash-message-warning {
+    @apply bg-yellow-500;
+}
+
+.form {
+    @apply flex flex-col;
+
+    .form-item {
+        @apply mb-2 text-lg dark:border-blue-950 border-b-gray-600 border-2 rounded pl-2;
+    }
+}
+
+.validation-error-list {
+    @apply text-red-500 mb-2;
+
+    .validation-error-message {
+        @apply text-sm list-disc list-inside;
+    }
+}
