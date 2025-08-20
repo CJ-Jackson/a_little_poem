@@ -1,3 +1,4 @@
+pub mod adapter;
 pub mod cache_local;
 pub mod config;
 pub mod context;

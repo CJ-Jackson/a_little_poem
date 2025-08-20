@@ -1,16 +1,16 @@
 use crate::bucket_list::model::{AddToBucketList, BucketListItem};
 use crate::bucket_list::repository::{BucketListRepository, BucketListRepositoryError};
+use crate::common::adapter::ResultAdapter;
 use crate::common::context::Dep;
 use crate::common::error::{ErrorReportResponse, JsonErrorOutput};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use crate::common::validation::ValidationErrorResponse;
-use error_stack::Report;
 use maud::{Markup, PreEscaped, html};
 use poem::http::StatusCode;
-use poem::web::Json;
+use poem::web::{Json, WithContentType, WithStatus};
 use poem::{IntoResponse, Response, Route, get, handler, post};
-use serde_json::{Value, json};
+use serde_json::json;
 
 const PREFIX: &str = "/bucket-list";
 
@@ -74,39 +74,19 @@ fn get_bucket_list_js() -> Markup {
     }
 }
 
-struct AllBucketListResult(
-    Result<
-        Json<Box<[BucketListItem]>>,
-        ErrorReportResponse<BucketListRepositoryError, JsonErrorOutput>,
-    >,
-);
-
-impl AllBucketListResult {
-    async fn execute<FUT>(f: FUT) -> Self
-    where
-        FUT: Future<Output = Result<Box<[BucketListItem]>, Report<BucketListRepositoryError>>>,
-    {
-        match f.await {
-            Ok(items) => Self(Ok(Json(items))),
-            Err(err) => Self(Err(ErrorReportResponse::new(err))),
-        }
-    }
-}
-
-impl IntoResponse for AllBucketListResult {
-    fn into_response(self) -> Response {
-        match self.0 {
-            Ok(json) => json.into_response(),
-            Err(err) => err.into_response(),
-        }
-    }
-}
-
 #[handler]
-async fn all_bucket_list(repo: Dep<BucketListRepository>) -> AllBucketListResult {
-    AllBucketListResult::execute(async {
-        let items = repo.0.get_all_from_bucket_list()?;
-        Ok(items)
+async fn all_bucket_list(
+    repo: Dep<BucketListRepository>,
+) -> ResultAdapter<
+    Json<Box<[BucketListItem]>>,
+    ErrorReportResponse<BucketListRepositoryError, JsonErrorOutput>,
+> {
+    ResultAdapter::execute(async {
+        let items = repo
+            .0
+            .get_all_from_bucket_list()
+            .map_err(ErrorReportResponse::new)?;
+        Ok(Json(items))
     })
     .await
 }
@@ -125,39 +105,12 @@ impl IntoResponse for AddBucketListRouteError {
     }
 }
 
-struct AddBucketListRouteResult(Result<Value, AddBucketListRouteError>);
-
-impl AddBucketListRouteResult {
-    async fn execute<FUT>(f: FUT) -> Self
-    where
-        FUT: Future<Output = Result<Value, AddBucketListRouteError>>,
-    {
-        match f.await {
-            Ok(value) => Self(Ok(value)),
-            Err(err) => Self(Err(err)),
-        }
-    }
-}
-
-impl IntoResponse for AddBucketListRouteResult {
-    fn into_response(self) -> Response {
-        match self.0 {
-            Ok(value) => value
-                .to_string()
-                .with_status(StatusCode::CREATED)
-                .with_content_type("application/json")
-                .into_response(),
-            Err(err) => err.into_response(),
-        }
-    }
-}
-
 #[handler]
 async fn add_bucket_list(
     repo: Dep<BucketListRepository>,
     data: Json<AddToBucketList>,
-) -> AddBucketListRouteResult {
-    AddBucketListRouteResult::execute(async {
+) -> ResultAdapter<WithContentType<WithStatus<String>>, AddBucketListRouteError> {
+    ResultAdapter::execute(async {
         let data = data
             .to_validated()
             .map_err(|e| AddBucketListRouteError::Validate(e))?;
@@ -166,7 +119,10 @@ async fn add_bucket_list(
             .add_to_bucket_list(&data)
             .map_err(|e| AddBucketListRouteError::Repo(ErrorReportResponse::new(e)))?;
 
-        Ok(json!({"message": "Success"}))
+        Ok(json!({"message": "Success"})
+            .to_string()
+            .with_status(StatusCode::CREATED)
+            .with_content_type("application/json"))
     })
     .await
 }
