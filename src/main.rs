@@ -1,4 +1,4 @@
-use crate::common::cache_local::init_once_cell;
+use crate::bucket_list::route::route_bucket_list;
 use crate::common::config::Config;
 use crate::common::html::css::route_css;
 use crate::home::route_home;
@@ -9,6 +9,7 @@ use poem::web::Path;
 use poem::{EndpointExt, Route, Server, get, handler};
 use thiserror::Error;
 
+pub mod bucket_list;
 pub mod common;
 pub mod home;
 
@@ -34,6 +35,7 @@ async fn main() -> Result<(), Report<MainError>> {
     let route = Route::new().at("/hello/:name", get(hello_root));
     let route = route_css(route);
     let route = route_home(route);
+    let route = route_bucket_list(route);
 
     let route = route.with(CookieJarManager::new());
 

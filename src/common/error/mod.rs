@@ -1,5 +1,11 @@
+use crate::common::html::HtmlBuilder;
 use error_stack::{Context, Report, ResultExt};
+use maud::{PreEscaped, html};
+use poem::http::StatusCode;
+use poem::{IntoResponse, Response};
+use serde_json::json;
 use std::error::Error;
+use std::marker::PhantomData;
 use thiserror::Error;
 
 pub trait FromIntoStackError: Error + Sized + Send + Sync + 'static {
@@ -131,5 +137,88 @@ where
                 Err(report.change_context(context))
             }
         }
+    }
+}
+
+pub trait ErrorStatus: Error + Sized + Send + Sync + 'static {
+    fn error_status(&self) -> StatusCode;
+}
+
+pub trait ErrorOutput: Send + Sync + 'static {}
+
+pub struct HtmlErrorOutput;
+
+impl ErrorOutput for HtmlErrorOutput {}
+
+pub struct JsonErrorOutput;
+
+impl ErrorOutput for JsonErrorOutput {}
+
+pub struct ErrorReportResponse<E, O = HtmlErrorOutput>(pub Report<E>, PhantomData<O>)
+where
+    E: ErrorStatus,
+    O: ErrorOutput;
+
+impl<E, O> ErrorReportResponse<E, O>
+where
+    E: ErrorStatus,
+    O: ErrorOutput,
+{
+    pub fn new(report: Report<E>) -> Self {
+        Self(report, PhantomData)
+    }
+}
+
+impl<E> IntoResponse for ErrorReportResponse<E>
+where
+    E: ErrorStatus,
+{
+    fn into_response(self) -> Response {
+        let status = self.0.current_context().error_status();
+        let pre = if cfg!(debug_assertions) {
+            format!("{:?}", self.0)
+        } else {
+            format!("{}", self.0)
+        };
+
+        let title = format!("Error: {}", status.to_string());
+
+        let html = HtmlBuilder::new(
+            title.clone(),
+            html! {
+                div .container .main-content .mt-3 .px-7 .py-7 .mx-auto {
+                    h1 .mt-3 { (title.to_string()) }
+                    pre .mt-3 { (PreEscaped(pre)) }
+                }
+            },
+        )
+        .build()
+        .into_string();
+
+        html.with_status(status).into_response()
+    }
+}
+
+impl<E> IntoResponse for ErrorReportResponse<E, JsonErrorOutput>
+where
+    E: ErrorStatus,
+{
+    fn into_response(self) -> Response {
+        let status = self.0.current_context().error_status();
+        let pre = if cfg!(debug_assertions) {
+            format!("{:?}", self.0)
+        } else {
+            format!("{}", self.0)
+        };
+
+        let title = format!("Error: {}", status.to_string());
+
+        let json = json!({
+            "title": title,
+            "pre": pre
+        })
+        .to_string();
+
+        json.with_status(status).into_response()
     }
 }

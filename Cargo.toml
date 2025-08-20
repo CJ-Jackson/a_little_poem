@@ -16,3 +16,4 @@ maud = { version = "0.27.0", features = ["poem"] }
 rusqlite = { version = "0.37.0", features = ["chrono"] }
 argon2 = "0.5.3"
 rmp-serde = "1.3.0"
+unicode-segmentation = "1.12.0"

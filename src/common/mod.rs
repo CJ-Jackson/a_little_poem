@@ -6,3 +6,4 @@ pub mod error;
 pub mod html;
 pub mod icon;
 pub mod password;
+pub mod validation;
