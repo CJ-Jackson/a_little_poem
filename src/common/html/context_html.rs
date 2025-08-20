@@ -155,7 +155,7 @@ impl ContextHtmlBuilder {
         html! {
             nav .nav-content {
                 span .nav-home {
-                    a href="/" { "Rust Vue Exercise, and more" }
+                    a href="/" { "A Little Poem" }
                 }
                 (self.parse_navigation(tag))
                 @if let Some(user_context) = user_context {
