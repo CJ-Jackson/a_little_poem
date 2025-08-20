@@ -1,4 +1,6 @@
 use crate::common::config::Config;
+use crate::common::html::css::route_css;
+use crate::home::route_home;
 use error_stack::{Report, ResultExt};
 use poem::listener::TcpListener;
 use poem::middleware::CookieJarManager;
@@ -28,15 +30,20 @@ async fn main() -> Result<(), Report<MainError>> {
         .await
         .change_context(MainError::ConfigError)?;
 
-    let app = Route::new().at("/hello/:name", get(hello_root));
+    let route = Route::new().at("/hello/:name", get(hello_root));
+    let route = route_css(route);
+    let route = route_home(route);
 
-    let app = app.with(CookieJarManager::new());
+    let app = route.with(CookieJarManager::new());
 
     match config.upgrade() {
-        Some(config) => Server::new(TcpListener::bind(config.poem.parse_address().as_str()))
-            .run(app)
-            .await
-            .change_context(MainError::IoError),
+        Some(config) => {
+            println!("Listening on http://{}", config.poem.parse_address());
+            Server::new(TcpListener::bind(config.poem.parse_address().as_str()))
+                .run(app)
+                .await
+                .change_context(MainError::IoError)
+        }
         None => Err(Report::new(MainError::ConfigError)),
     }
 }

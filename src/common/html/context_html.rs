@@ -2,8 +2,7 @@ use crate::common::context::{Context, ContextError, FromContext};
 use crate::common::html::HtmlBuilder;
 use error_stack::Report;
 use maud::{Markup, html};
-use std::cell::RefCell;
-use std::sync::{RwLock, TryLockResult};
+use std::sync::RwLock;
 
 struct ContextHtmlCellData {
     title: Option<String>,

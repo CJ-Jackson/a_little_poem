@@ -10,7 +10,7 @@ impl Default for PoemConfig {
     fn default() -> Self {
         Self {
             address: "127.0.0.1".to_string(),
-            port: 18080,
+            port: 8000,
         }
     }
 }

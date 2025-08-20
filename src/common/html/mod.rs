@@ -1,4 +1,5 @@
 pub mod context_html;
+pub mod css;
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 
@@ -19,7 +20,7 @@ fn html_doc(title: &str, content: Markup, head: Markup, footer: Markup) -> Marku
             head {
                 meta charset="utf-8";
                 meta name="viewport" content="width=device-width, initial-scale=1";
-                title { (title) " | Rust Vue Exercise, and more" }
+                title { (title) " | A Little Poem" }
                 link rel="stylesheet" type="text/css" href="/main.css";
                 (html_import_map())
                 (head)
