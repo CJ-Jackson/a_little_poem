@@ -1,22 +1,21 @@
 use crate::bucket_list::route::route_bucket_list;
+use crate::common::cache_local::init_cache_local;
 use crate::common::config::Config;
 use crate::common::html::css::route_css;
 use crate::home::route_home;
+use crate::user::model::UserIdContext;
 use error_stack::{Report, ResultExt};
 use poem::listener::TcpListener;
 use poem::middleware::CookieJarManager;
-use poem::web::Path;
-use poem::{EndpointExt, Route, Server, get, handler};
+use poem::session::{CookieConfig, CookieSession};
+use poem::{EndpointExt, Route, Server};
+use std::sync::Arc;
 use thiserror::Error;
 
 pub mod bucket_list;
 pub mod common;
 pub mod home;
-
-#[handler]
-async fn hello_root(Path(name): Path<String>) -> String {
-    format!("Hello, {}!", name)
-}
+pub mod user;
 
 #[derive(Debug, Error)]
 pub enum MainError {
@@ -32,12 +31,15 @@ async fn main() -> Result<(), Report<MainError>> {
         .await
         .change_context(MainError::ConfigError)?;
 
-    let route = Route::new().at("/hello/:name", get(hello_root));
+    let route = Route::new();
     let route = route_css(route);
     let route = route_home(route);
     let route = route_bucket_list(route);
 
-    let route = route.with(CookieJarManager::new());
+    let route = route
+        .with(CookieJarManager::new())
+        .with(CookieSession::new(CookieConfig::new()))
+        .around(init_cache_local::<Arc<UserIdContext>, _>);
 
     match config.upgrade() {
         Some(config) => {

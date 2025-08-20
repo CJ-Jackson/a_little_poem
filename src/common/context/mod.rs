@@ -1,3 +1,5 @@
+pub mod user;
+
 use crate::common::config::Config;
 use error_stack::Report;
 use poem::http::StatusCode;

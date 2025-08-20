@@ -1,4 +1,4 @@
-use crate::common::context::Dep;
+use crate::common::context::user::UserDep;
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use maud::{Markup, PreEscaped, html};
@@ -6,11 +6,12 @@ use poem::web::WithContentType;
 use poem::{IntoResponse, Route, get, handler};
 
 #[handler]
-async fn home(context_html_builder: Dep<ContextHtmlBuilder>) -> Markup {
+async fn home(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
     let title = "Rust Vue Exercise";
     context_html_builder
         .0
         .attach_title(title)
+        .set_current_tag("home")
         .attach_content(html! {
             h1 .mt-3 { (title) }
             p .mt-3 { "This is Rust Vue Exercise." }

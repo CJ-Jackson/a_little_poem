@@ -17,7 +17,7 @@ impl<T: Send + Sync + 'static> Clone for CacheLocal<T> {
     }
 }
 
-pub async fn init_once_cell<T: Clone + Send + Sync + 'static, E: Endpoint>(
+pub async fn init_cache_local<T: Clone + Send + Sync + 'static, E: Endpoint>(
     next: E,
     mut req: Request,
 ) -> poem::Result<E::Output> {

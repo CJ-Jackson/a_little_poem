@@ -2,6 +2,7 @@ use crate::bucket_list::model::{AddToBucketList, BucketListItem};
 use crate::bucket_list::repository::{BucketListRepository, BucketListRepositoryError};
 use crate::common::adapter::ResultAdapter;
 use crate::common::context::Dep;
+use crate::common::context::user::UserDep;
 use crate::common::error::{ErrorReportResponse, JsonErrorOutput};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
@@ -15,11 +16,12 @@ use serde_json::json;
 const PREFIX: &str = "/bucket-list";
 
 #[handler]
-async fn main_bucket_list(context_html_builder: Dep<ContextHtmlBuilder>) -> Markup {
+async fn main_bucket_list(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
     let title = "Bucket List";
     context_html_builder
         .0
         .attach_title(title)
+        .set_current_tag("bucket-list")
         .attach_content(html! {
             h1 .mt-3 { (title) }
             div #bucket-list .mt-3 v-cloak {
