@@ -4,6 +4,7 @@ use crate::common::config::Config;
 use crate::common::html::css::route_css;
 use crate::home::route_home;
 use crate::user::model::UserIdContext;
+use crate::user::route::route_user;
 use error_stack::{Report, ResultExt};
 use poem::listener::TcpListener;
 use poem::middleware::CookieJarManager;
@@ -35,6 +36,7 @@ async fn main() -> Result<(), Report<MainError>> {
     let route = route_css(route);
     let route = route_home(route);
     let route = route_bucket_list(route);
+    let route = route_user(route);
 
     let route = route
         .with(CookieJarManager::new())

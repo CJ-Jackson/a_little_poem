@@ -56,7 +56,7 @@ pub struct DefaultFlag;
 
 impl UserContextDependencyFlag for DefaultFlag {}
 
-pub struct UserDependency<T, F = DefaultFlag>(pub T, PhantomData<F>)
+pub struct UserDependency<T, F = DefaultFlag>(pub T, pub Arc<UserIdContext>, PhantomData<F>)
 where
     T: FromUserContext,
     F: UserContextDependencyFlag;
@@ -109,6 +109,7 @@ where
                 let status_code = e.current_context().status_code();
                 poem::Error::from_string(status_code.1, status_code.0)
             })?,
+            Arc::clone(&user_id_context),
             PhantomData,
         ))
     }

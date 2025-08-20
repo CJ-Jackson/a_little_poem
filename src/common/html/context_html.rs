@@ -163,12 +163,12 @@ impl ContextHtmlBuilder {
                         @if user_context.is_user {
                             a href="/user/" { "Hello, " (user_context.username) }
                         } @else {
-                            a href="/user/login" { "You're a visitor, click here to login" }
+                            a href="/user/login/" { "You're a visitor, click here to login" }
                         }
                     }
                 } @else {
                     span .nav-user {
-                        a .nav-user href="/user/login" { "Login" }
+                        a .nav-user href="/user/login/" { "Login" }
                     }
                 }
             }

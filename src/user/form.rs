@@ -1,0 +1,73 @@
+use crate::common::html::context_html::ContextHtmlBuilder;
+use crate::common::validation::{
+    ValidateErrorItem, ValidationErrorResponse, ValidationErrorsBuilder, ValidationOptionMarkup,
+};
+use crate::user::model::UserRegisterFormValidated;
+use crate::user::validate::password::Password;
+use crate::user::validate::username::{IsUsernameTaken, Username, UsernameCheckResult};
+use maud::{Markup, html};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct UserRegisterForm {
+    pub username: String,
+    pub password: String,
+    pub password_confirm: String,
+}
+
+impl UserRegisterForm {
+    pub async fn as_validated<T: IsUsernameTaken>(
+        &self,
+        is_username_taken: &T,
+    ) -> Result<UserRegisterFormValidated, ValidationErrorResponse> {
+        let mut builder = ValidationErrorsBuilder::new();
+
+        let username = builder
+            .add_item_from_trait(
+                Username::parse(self.username.clone(), None)
+                    .check_username_result(is_username_taken, None)
+                    .await,
+            )
+            .unwrap_or_default();
+        let password = builder
+            .add_item_from_trait(Password::parse(self.password.clone(), None))
+            .unwrap_or_default();
+        let password_confirm = builder
+            .add_item_from_trait(password.parse_confirm(self.password_confirm.clone(), None))
+            .unwrap_or_default();
+
+        builder.build_result()?;
+
+        Ok(UserRegisterFormValidated {
+            username,
+            password,
+            password_confirm,
+        })
+    }
+
+    pub fn html_form(
+        title: String,
+        context_html_builder: &ContextHtmlBuilder,
+        user_register_form: Option<UserRegisterForm>,
+        errors: Option<HashMap<String, ValidateErrorItem>>,
+    ) -> Markup {
+        let user_register_form = user_register_form.unwrap_or_default();
+        let errors = errors.unwrap_or_default();
+        context_html_builder
+            .attach_title(title.as_str())
+            .attach_content(html! {
+                h1 .mt-3 { (title) }
+                form method="post" .form {
+                    input .form-item type="text" name="username" placeholder="Username" value=(user_register_form.username);
+                    (errors.get("username").as_html())
+                    input .form-item type="password" name="password" placeholder="Password";
+                    (errors.get("password").as_html())
+                    input .form-item type="password" name="password_confirm" placeholder="Confirm password";
+                    (errors.get("password_confirm").as_html())
+                    button .btn .btn-sky-blue .mt-3 type="submit" { "Register" };
+                }
+            })
+            .build()
+    }
+}

@@ -1,7 +1,11 @@
+use crate::common::context::user::{FromUserContext, UserContext};
 use crate::common::context::{Context, ContextError, FromContext};
+use crate::common::password::Password;
 use crate::user::model::{IdUsername, UserIdContext};
 use crate::user::repository::UserRepository;
+use crate::user::validate::username::IsUsernameTaken;
 use error_stack::Report;
+use uuid::Uuid;
 
 pub struct UserCheckService {
     user_repository: UserRepository,
@@ -43,6 +47,83 @@ impl UserCheckService {
     }
 }
 
+pub struct UserLoginService {
+    user_repository: UserRepository,
+    token_cookie: Option<String>,
+}
+
+impl UserLoginService {
+    fn new(user_repository: UserRepository, token_cookie: Option<String>) -> Self {
+        Self {
+            user_repository,
+            token_cookie,
+        }
+    }
+    pub fn validate_login(&self, username: String, password: String) -> Option<String> {
+        if let Ok(id_password) = self.user_repository.get_user_password(username) {
+            let password_status = Password::verify_password(id_password.password, password);
+            if let Ok(password_status) = password_status {
+                if password_status.is_valid() {
+                    let uuid_token = Uuid::new_v4().to_string();
+
+                    if self
+                        .user_repository
+                        .add_token(uuid_token.clone(), id_password.id)
+                        .is_err()
+                    {
+                        return None;
+                    }
+
+                    return Some(uuid_token);
+                }
+            }
+        }
+
+        None
+    }
+
+    pub fn logout(&self) -> bool {
+        if let Some(token) = &self.token_cookie {
+            self.user_repository.delete_token(token.clone()).is_ok()
+        } else {
+            false
+        }
+    }
+}
+
+pub struct UserRegisterService {
+    user_repository: UserRepository,
+}
+
+impl UserRegisterService {
+    pub fn new(user_repository: UserRepository) -> Self {
+        Self { user_repository }
+    }
+
+    pub fn register_user(&self, username: String, password: String) -> bool {
+        let password = match Password::hash_password(password) {
+            Ok(password) => password,
+            Err(_) => return false,
+        };
+        let password = match password.encode_to_msg_pack() {
+            Ok(password) => password,
+            Err(_) => return false,
+        };
+
+        self.user_repository
+            .register_user(username, password)
+            .is_ok()
+    }
+}
+
+impl IsUsernameTaken for UserRegisterService {
+    async fn is_username_taken(&self, username: &str) -> bool {
+        self.user_repository
+            .username_taken(username.to_string())
+            .is_ok()
+    }
+}
+
 impl FromContext for UserCheckService {
     async fn from_context(ctx: &'_ Context<'_>) -> Result<Self, Report<ContextError>> {
         let cookie = ctx.req.cookie();
@@ -51,5 +132,21 @@ impl FromContext for UserCheckService {
             ctx.inject().await?,
             cookie.get("login-token").map(|v| v.value_str().to_string()),
         ))
+    }
+}
+
+impl FromUserContext for UserLoginService {
+    async fn from_user_context(ctx: &'_ UserContext<'_>) -> Result<Self, Report<ContextError>> {
+        let cookie = ctx.req.cookie();
+        Ok(Self::new(
+            ctx.inject_global().await?,
+            cookie.get("login-token").map(|v| v.value_str().to_string()),
+        ))
+    }
+}
+
+impl FromUserContext for UserRegisterService {
+    async fn from_user_context(ctx: &'_ UserContext<'_>) -> Result<Self, Report<ContextError>> {
+        Ok(Self::new(ctx.inject_global().await?))
     }
 }

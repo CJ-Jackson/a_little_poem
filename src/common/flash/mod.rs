@@ -54,17 +54,19 @@ impl FlashMessageHtml for Option<Flash> {
 }
 
 pub trait FlashMessage {
-    fn flash(&mut self, flash: Flash);
+    fn flash(&self, flash: Flash);
 
     fn get_flash(&self) -> Option<Flash>;
 }
 
 impl FlashMessage for Session {
-    fn flash(&mut self, flash: Flash) {
+    fn flash(&self, flash: Flash) {
         self.set("flash", flash)
     }
 
     fn get_flash(&self) -> Option<Flash> {
-        self.get("flash")
+        let v = self.get("flash");
+        self.remove("flash");
+        v
     }
 }
