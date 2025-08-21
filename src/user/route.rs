@@ -1,4 +1,5 @@
 use crate::common::context::user::UserDep;
+use crate::common::cookie_builder::CookieBuilderExt;
 use crate::common::flash::{Flash, FlashMessage};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::user::flag::{LoginFlag, LogoutFlag};
@@ -71,18 +72,19 @@ async fn login_post(
     data: Form<UserLoginForm>,
     user_login: UserDep<UserLoginService, LoginFlag>,
     session: &Session,
-    cookie: &CookieJar,
+    cookie_jar: &CookieJar,
 ) -> Redirect {
     let token = user_login
         .0
         .validate_login(data.username.clone(), data.password.clone());
     if let Some(token) = token {
-        let mut new_cookie = Cookie::new_with_str("login-token", token);
-        new_cookie.set_path("/");
-        // 30 days
-        new_cookie.set_expires(Utc::now().add(TimeDelta::days(30)));
+        let new_cookie = Cookie::new_with_str("login-token", token)
+            .init_builder()
+            .path("/")
+            .expires(Utc::now().add(TimeDelta::days(30)))
+            .build();
 
-        cookie.add(new_cookie);
+        cookie_jar.add(new_cookie);
         session.flash(Flash::Success {
             msg: "Login succeeded".to_string(),
         });
