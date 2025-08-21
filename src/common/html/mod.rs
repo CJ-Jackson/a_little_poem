@@ -50,7 +50,6 @@ impl HtmlBuilder {
         }
     }
 
-    #[allow(dead_code)]
     pub fn attach_head(mut self, head: Markup) -> Self {
         self.head = Some(head);
         self
