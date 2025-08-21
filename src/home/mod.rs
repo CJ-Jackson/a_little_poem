@@ -1,9 +1,9 @@
 use crate::common::context::user::UserDep;
+use crate::common::etag::{EtagCheck, EtagStamp};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use maud::{Markup, PreEscaped, html};
-use poem::web::WithContentType;
-use poem::{IntoResponse, handler};
+use poem::handler;
 
 #[handler]
 pub async fn home_page(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
@@ -46,8 +46,10 @@ fn root_js() -> Markup {
 }
 
 #[handler]
-pub async fn favicon() -> WithContentType<Vec<u8>> {
-    (*include_bytes!("_asset/favicon.ico"))
-        .to_vec()
-        .with_content_type("image/x-icon")
+pub async fn favicon(_etag_check: EtagCheck) -> EtagStamp {
+    let v = *include_bytes!("_asset/favicon.ico");
+    EtagStamp {
+        data: v.into(),
+        content_type: "image/x-icon",
+    }
 }

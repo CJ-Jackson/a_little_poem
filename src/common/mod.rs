@@ -4,6 +4,7 @@ pub mod config;
 pub mod context;
 pub mod db;
 pub mod error;
+pub mod etag;
 pub mod flash;
 pub mod html;
 pub mod icon;
