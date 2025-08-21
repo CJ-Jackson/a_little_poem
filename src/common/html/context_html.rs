@@ -201,10 +201,7 @@ impl FromContext for ContextHtmlBuilder {
     async fn from_context(ctx: &'_ Context<'_>) -> Result<Self, Report<ContextError>> {
         let flash: Option<Flash> = match ctx.req.data::<Session>() {
             None => None,
-            Some(session) => match session.get_flash() {
-                None => None,
-                Some(flash) => Some(flash),
-            },
+            Some(session) => session.get_flash(),
         };
         Ok(Self::new(flash))
     }
