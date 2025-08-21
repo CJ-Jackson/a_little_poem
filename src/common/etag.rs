@@ -13,7 +13,7 @@ impl IntoResponse for EtagStamp {
             None => data.with_header("X-ETag", "not-set"),
             Some(etag) => data.with_header("ETag", etag),
         }
-        .with_header("Content-Type", self.content_type)
+        .with_content_type(self.content_type)
         .into_response()
     }
 }
@@ -31,7 +31,7 @@ impl<'a> FromRequest<'a> for EtagCheck {
         match etag_header {
             None => Ok(Self),
             Some(etag_header) if etag_header == etag => {
-                return Err(poem::Error::from_status(StatusCode::NOT_MODIFIED));
+                Err(poem::Error::from_status(StatusCode::NOT_MODIFIED))
             }
             Some(_) => Ok(Self),
         }
