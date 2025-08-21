@@ -3,10 +3,10 @@ use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use maud::{Markup, PreEscaped, html};
 use poem::web::WithContentType;
-use poem::{IntoResponse, Route, get, handler};
+use poem::{IntoResponse, handler};
 
 #[handler]
-async fn home(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
+pub async fn home_page(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
     let title = "Rust Vue Exercise";
     context_html_builder
         .0
@@ -46,12 +46,8 @@ fn root_js() -> Markup {
 }
 
 #[handler]
-async fn favicon() -> WithContentType<Vec<u8>> {
+pub async fn favicon() -> WithContentType<Vec<u8>> {
     (*include_bytes!("_asset/favicon.ico"))
         .to_vec()
         .with_content_type("image/x-icon")
-}
-
-pub fn route_home(route: Route) -> Route {
-    route.at("/", get(home)).at("/favicon.ico", get(favicon))
 }

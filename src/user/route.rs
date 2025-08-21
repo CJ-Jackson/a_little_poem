@@ -12,8 +12,6 @@ use poem::{IntoResponse, Route, get, handler};
 use serde::Deserialize;
 use std::time::Duration;
 
-const PREFIX: &str = "/user";
-
 #[handler]
 async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
     let title = if context_html_builder.1.is_user {
@@ -163,13 +161,10 @@ async fn register_post(
     }
 }
 
-pub fn route_user(route: Route) -> Route {
-    route
-        .at(format!("{PREFIX}/"), get(display_user))
-        .at(format!("{PREFIX}/login/"), get(login).post(login_post))
-        .at(format!("{PREFIX}/logout/"), get(logout))
-        .at(
-            format!("{PREFIX}/register/"),
-            get(register).post(register_post),
-        )
+pub fn route_user() -> Route {
+    Route::new()
+        .at("/", get(display_user))
+        .at("/login/", get(login).post(login_post))
+        .at("/logout/", get(logout))
+        .at("/register/", get(register).post(register_post))
 }

@@ -13,8 +13,6 @@ use poem::web::{Json, WithContentType, WithStatus};
 use poem::{IntoResponse, Response, Route, get, handler, post};
 use serde_json::json;
 
-const PREFIX: &str = "/bucket-list";
-
 #[handler]
 async fn main_bucket_list(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
     let title = "Bucket List";
@@ -129,9 +127,9 @@ async fn add_bucket_list(
     .await
 }
 
-pub fn route_bucket_list(route: Route) -> Route {
-    route
-        .at(format!("{PREFIX}/"), get(main_bucket_list))
-        .at(format!("{PREFIX}/all"), get(all_bucket_list))
-        .at(format!("{PREFIX}/add"), post(add_bucket_list))
+pub fn route_bucket_list() -> Route {
+    Route::new()
+        .at("/", get(main_bucket_list))
+        .at("/all", get(all_bucket_list))
+        .at("/add", post(add_bucket_list))
 }
