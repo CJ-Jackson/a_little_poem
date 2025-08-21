@@ -4,13 +4,14 @@ use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::user::flag::{LoginFlag, LogoutFlag};
 use crate::user::form::UserRegisterForm;
 use crate::user::service::{UserLoginService, UserRegisterService};
+use chrono::{TimeDelta, Utc};
 use maud::{Markup, html};
 use poem::session::Session;
 use poem::web::cookie::{Cookie, CookieJar};
 use poem::web::{Form, Redirect};
 use poem::{IntoResponse, Route, get, handler};
 use serde::Deserialize;
-use std::time::Duration;
+use std::ops::Add;
 
 #[handler]
 async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
@@ -79,7 +80,7 @@ async fn login_post(
         let mut new_cookie = Cookie::new_with_str("login-token", token);
         new_cookie.set_path("/");
         // 30 days
-        new_cookie.set_max_age(Duration::from_secs(30 * 24 * 60 * 60));
+        new_cookie.set_expires(Utc::now().add(TimeDelta::days(30)));
 
         cookie.add(new_cookie);
         session.flash(Flash::Success {
