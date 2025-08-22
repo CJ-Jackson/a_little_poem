@@ -18,7 +18,7 @@ impl CookieBuilder {
         self
     }
 
-    pub fn expires_by_delta(mut self, time_delta: TimeDelta) -> Self {
+    pub fn expires_by_delta(self, time_delta: TimeDelta) -> Self {
         self.expires(Utc::now().add(time_delta))
     }
 

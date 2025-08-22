@@ -5,14 +5,13 @@ use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::user::flag::{LoginFlag, LogoutFlag};
 use crate::user::form::UserRegisterForm;
 use crate::user::service::{UserLoginService, UserRegisterService};
-use chrono::{TimeDelta, Utc};
+use chrono::TimeDelta;
 use maud::{Markup, html};
 use poem::session::Session;
 use poem::web::cookie::{Cookie, CookieJar};
 use poem::web::{Form, Redirect};
 use poem::{IntoResponse, Route, get, handler};
 use serde::Deserialize;
-use std::ops::Add;
 
 #[handler]
 async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
