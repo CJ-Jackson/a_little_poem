@@ -9,9 +9,9 @@ use crate::common::icon::plus_icon;
 use crate::common::validation::ValidationErrorResponse;
 use maud::{Markup, PreEscaped, html};
 use poem::http::StatusCode;
-use poem::web::{Json, WithContentType, WithStatus};
+use poem::web::{Json, WithStatus};
 use poem::{IntoResponse, Response, Route, get, handler, post};
-use serde_json::json;
+use serde_json::{Value, json};
 
 #[handler]
 async fn main_bucket_list(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
@@ -103,7 +103,7 @@ impl IntoResponse for AddBucketListRouteError {
 async fn add_bucket_list(
     repo: Dep<BucketListRepository>,
     data: Json<AddToBucketList>,
-) -> ResultAdapter<WithContentType<WithStatus<String>>, AddBucketListRouteError> {
+) -> ResultAdapter<WithStatus<Json<Value>>, AddBucketListRouteError> {
     ResultAdapter::execute(async {
         let data = data
             .to_validated()
@@ -113,10 +113,7 @@ async fn add_bucket_list(
             .add_to_bucket_list(&data)
             .map_err(|e| AddBucketListRouteError::Repo(ErrorReportResponse::new(e)))?;
 
-        Ok(json!({"message": "Success"})
-            .to_string()
-            .with_status(StatusCode::CREATED)
-            .with_content_type("application/json"))
+        Ok(Json(json!({"message": "Success"})).with_status(StatusCode::CREATED))
     })
     .await
 }
