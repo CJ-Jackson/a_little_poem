@@ -3,7 +3,7 @@ use crate::common::cookie_builder::CookieBuilderExt;
 use crate::common::flash::{Flash, FlashMessage};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::user::flag::{LoginFlag, LogoutFlag};
-use crate::user::form::UserRegisterForm;
+use crate::user::form::{UserLoginForm, UserRegisterForm};
 use crate::user::service::{UserLoginService, UserRegisterService};
 use chrono::TimeDelta;
 use maud::{Markup, html};
@@ -11,8 +11,6 @@ use poem::session::Session;
 use poem::web::cookie::{Cookie, CookieJar};
 use poem::web::{Form, Redirect};
 use poem::{IntoResponse, Route, get, handler};
-use serde::Deserialize;
-
 #[handler]
 async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
     let title = if context_html_builder.1.is_user {
@@ -60,34 +58,31 @@ async fn login(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
         .build()
 }
 
-#[derive(Deserialize)]
-struct UserLoginForm {
-    pub username: String,
-    pub password: String,
-}
-
 #[handler]
 async fn login_post(
-    data: Form<UserLoginForm>,
     user_login: UserDep<UserLoginService, LoginFlag>,
+    data: Form<UserLoginForm>,
     session: &Session,
     cookie_jar: &CookieJar,
 ) -> Redirect {
-    let token = user_login
-        .0
-        .validate_login(data.username.clone(), data.password.clone());
-    if let Some(token) = token {
-        let new_cookie = Cookie::new_with_str("login-token", token)
-            .into_builder()
-            .path("/")
-            .expires_by_delta(TimeDelta::days(30))
-            .build();
+    if let Ok(data) = data.0.as_validated() {
+        let token = user_login.0.validate_login(
+            data.username.as_str().to_string(),
+            data.password.as_str().to_string(),
+        );
+        if let Some(token) = token {
+            let new_cookie = Cookie::new_with_str("login-token", token)
+                .into_builder()
+                .path("/")
+                .expires_by_delta(TimeDelta::days(30))
+                .build();
 
-        cookie_jar.add(new_cookie);
-        session.flash(Flash::Success {
-            msg: "Login succeeded".to_string(),
-        });
-        return Redirect::see_other("/user/");
+            cookie_jar.add(new_cookie);
+            session.flash(Flash::Success {
+                msg: "Login succeeded".to_string(),
+            });
+            return Redirect::see_other("/user/");
+        }
     }
 
     session.flash(Flash::Error {
@@ -131,8 +126,8 @@ impl IntoResponse for RegisterPostResponse {
 
 #[handler]
 async fn register_post(
-    data: Form<UserRegisterForm>,
     user_register_service: UserDep<UserRegisterService, LoginFlag>,
+    data: Form<UserRegisterForm>,
     context_html_builder: UserDep<ContextHtmlBuilder>,
     session: &Session,
 ) -> RegisterPostResponse {

@@ -23,3 +23,8 @@ pub struct UserRegisterFormValidated {
     pub password: Password,
     pub password_confirm: Password,
 }
+
+pub struct UserFormValidated {
+    pub username: Username,
+    pub password: Password,
+}

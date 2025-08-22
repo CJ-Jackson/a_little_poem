@@ -2,7 +2,7 @@ use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::validation::{
     ValidateErrorItem, ValidationErrorResponse, ValidationErrorsBuilder, ValidationOptionMarkup,
 };
-use crate::user::model::UserRegisterFormValidated;
+use crate::user::model::{UserFormValidated, UserRegisterFormValidated};
 use crate::user::validate::password::Password;
 use crate::user::validate::username::{IsUsernameTaken, Username, UsernameCheckResult};
 use maud::{Markup, html};
@@ -69,5 +69,28 @@ impl UserRegisterForm {
                 }
             })
             .build()
+    }
+}
+
+#[derive(Deserialize)]
+pub struct UserLoginForm {
+    pub username: String,
+    pub password: String,
+}
+
+impl UserLoginForm {
+    pub fn as_validated(&self) -> Result<UserFormValidated, ValidationErrorResponse> {
+        let mut builder = ValidationErrorsBuilder::new();
+
+        let username = builder
+            .add_item_from_trait(Username::parse_login(self.username.clone(), None))
+            .unwrap_or_default();
+        let password = builder
+            .add_item_from_trait(Password::parse_login(self.password.clone(), None))
+            .unwrap_or_default();
+
+        builder.build_result()?;
+
+        Ok(UserFormValidated { username, password })
     }
 }

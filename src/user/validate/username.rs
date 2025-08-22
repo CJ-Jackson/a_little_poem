@@ -51,6 +51,26 @@ impl Username {
         Ok(Self(username))
     }
 
+    pub fn parse_login(
+        username: String,
+        field_name: Option<String>,
+    ) -> Result<Self, Report<UsernameError>> {
+        let mut message: Vec<String> = vec![];
+        let field_name = field_name.unwrap_or("username".to_string());
+        let field_name_no_underscore = field_name.replace("_", " ");
+        let username_validator = username.as_string_validator();
+
+        (username_validator.count_graphemes() > 30).then(|| {
+            message.push(format!(
+                "{} must be at most 30 characters",
+                &field_name_no_underscore
+            ))
+        });
+
+        ValidateErrorItem::from_vec(field_name, message).then_err_report(|s| UsernameError(s))?;
+        Ok(Self(username))
+    }
+
     pub fn as_str(&self) -> &str {
         &self.0
     }

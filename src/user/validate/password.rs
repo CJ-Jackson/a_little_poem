@@ -69,6 +69,26 @@ impl Password {
         Ok(Self(password))
     }
 
+    pub fn parse_login(
+        password: String,
+        field_name: Option<String>,
+    ) -> Result<Self, Report<PasswordError>> {
+        let mut message: Vec<String> = vec![];
+        let field_name = field_name.unwrap_or("password".to_string());
+        let field_name_no_underscore = field_name.replace("_", " ");
+        let password_validator = password.as_string_validator();
+
+        (password_validator.count_graphemes() > 64).then(|| {
+            message.push(format!(
+                "{} must be at most 64 characters",
+                &field_name_no_underscore
+            ));
+        });
+
+        ValidateErrorItem::from_vec(field_name, message).then_err_report(|s| PasswordError(s))?;
+        Ok(Self(password))
+    }
+
     pub fn parse_confirm(
         &self,
         password_confirm: String,
