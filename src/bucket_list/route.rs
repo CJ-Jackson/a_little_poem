@@ -1,6 +1,6 @@
 use crate::bucket_list::model::{AddToBucketList, BucketListItem};
 use crate::bucket_list::repository::{BucketListRepository, BucketListRepositoryError};
-use crate::common::adapter::ResultAdapter;
+use crate::common::adapter::{ReportAdapter, ResultAdapter};
 use crate::common::context::Dep;
 use crate::common::context::user::UserDep;
 use crate::common::error::{ErrorReportResponse, JsonErrorOutput};
@@ -77,15 +77,9 @@ fn get_bucket_list_js() -> Markup {
 #[handler]
 async fn all_bucket_list(
     repo: Dep<BucketListRepository>,
-) -> ResultAdapter<
-    Json<Box<[BucketListItem]>>,
-    ErrorReportResponse<BucketListRepositoryError, JsonErrorOutput>,
-> {
-    ResultAdapter::execute(async {
-        let items = repo
-            .0
-            .get_all_from_bucket_list()
-            .map_err(ErrorReportResponse::new)?;
+) -> ReportAdapter<Json<Box<[BucketListItem]>>, BucketListRepositoryError, JsonErrorOutput> {
+    ReportAdapter::execute(async {
+        let items = repo.0.get_all_from_bucket_list()?;
         Ok(Json(items))
     })
     .await

@@ -144,15 +144,30 @@ pub trait ErrorStatus: Error + Sized + Send + Sync + 'static {
     fn error_status(&self) -> StatusCode;
 }
 
-pub trait ErrorOutput: Send + Sync + 'static {}
+pub enum OutputType {
+    Html,
+    Json,
+}
+
+pub trait ErrorOutput: Send + Sync + 'static {
+    const OUTPUT_TYPE: OutputType;
+
+    fn output_type() -> OutputType {
+        Self::OUTPUT_TYPE
+    }
+}
 
 pub struct HtmlErrorOutput;
 
-impl ErrorOutput for HtmlErrorOutput {}
+impl ErrorOutput for HtmlErrorOutput {
+    const OUTPUT_TYPE: OutputType = OutputType::Html;
+}
 
 pub struct JsonErrorOutput;
 
-impl ErrorOutput for JsonErrorOutput {}
+impl ErrorOutput for JsonErrorOutput {
+    const OUTPUT_TYPE: OutputType = OutputType::Json;
+}
 
 pub struct ErrorReportResponse<E, O = HtmlErrorOutput>(pub Report<E>, PhantomData<O>)
 where
@@ -169,9 +184,10 @@ where
     }
 }
 
-impl<E> IntoResponse for ErrorReportResponse<E>
+impl<E, O> IntoResponse for ErrorReportResponse<E, O>
 where
     E: ErrorStatus,
+    O: ErrorOutput,
 {
     fn into_response(self) -> Response {
         let status = self.0.current_context().error_status();
@@ -183,42 +199,35 @@ where
 
         let title = format!("Error: {}", status.to_string());
 
-        let html = HtmlBuilder::new(
-            title.clone(),
-            html! {
-                div .container .main-content .mt-3 .px-7 .py-7 .mx-auto {
-                    h1 .mt-3 { (title.to_string()) }
-                    pre .mt-3 { (PreEscaped(pre)) }
-                }
-            },
-        )
-        .build()
-        .into_string();
+        match O::output_type() {
+            OutputType::Html => {
+                let html = HtmlBuilder::new(
+                    title.clone(),
+                    html! {
+                        div .container .main-content .mt-3 .px-7 .py-7 .mx-auto {
+                            h1 .mt-3 { (title.to_string()) }
+                            pre .mt-3 { (PreEscaped(pre)) }
+                        }
+                    },
+                )
+                .build()
+                .into_string();
 
-        html.with_status(status).into_response()
-    }
-}
+                html.with_status(status)
+                    .with_content_type("text/html")
+                    .into_response()
+            }
+            OutputType::Json => {
+                let json = json!({
+                    "title": title,
+                    "pre": pre
+                })
+                .to_string();
 
-impl<E> IntoResponse for ErrorReportResponse<E, JsonErrorOutput>
-where
-    E: ErrorStatus,
-{
-    fn into_response(self) -> Response {
-        let status = self.0.current_context().error_status();
-        let pre = if cfg!(debug_assertions) {
-            format!("{:?}", self.0)
-        } else {
-            format!("{}", self.0)
-        };
-
-        let title = format!("Error: {}", status.to_string());
-
-        let json = json!({
-            "title": title,
-            "pre": pre
-        })
-        .to_string();
-
-        json.with_status(status).into_response()
+                json.with_status(status)
+                    .with_content_type("application/json")
+                    .into_response()
+            }
+        }
     }
 }
