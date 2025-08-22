@@ -27,6 +27,7 @@ impl CookieBuilder {
         self
     }
 
+    /// Not recommended to use this method, use `expires_by_delta` instead.
     pub fn max_age(mut self, value: Duration) -> Self {
         self.cookie.set_max_age(value);
         self
