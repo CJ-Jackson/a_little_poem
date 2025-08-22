@@ -11,6 +11,7 @@ use poem::session::Session;
 use poem::web::cookie::{Cookie, CookieJar};
 use poem::web::{Form, Redirect};
 use poem::{IntoResponse, Route, get, handler};
+
 #[handler]
 async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
     let title = if context_html_builder.1.is_user {
