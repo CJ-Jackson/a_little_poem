@@ -210,8 +210,7 @@ where
                         }
                     },
                 )
-                .build()
-                .into_string();
+                .build();
 
                 html.with_status(status)
                     .with_content_type("text/html")
