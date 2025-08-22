@@ -2,6 +2,7 @@ use crate::common::html::HtmlBuilder;
 use error_stack::{Context, Report, ResultExt};
 use maud::{PreEscaped, html};
 use poem::http::StatusCode;
+use poem::web::Json;
 use poem::{IntoResponse, Response};
 use serde_json::json;
 use std::error::Error;
@@ -217,11 +218,10 @@ where
                     .into_response()
             }
             OutputType::Json => {
-                let json = json!({
+                let json = Json(json!({
                     "title": title,
                     "pre": pre
-                })
-                .to_string();
+                }));
 
                 json.with_status(status)
                     .with_content_type("application/json")
