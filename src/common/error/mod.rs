@@ -213,9 +213,7 @@ where
                 )
                 .build();
 
-                html.with_status(status)
-                    .with_content_type("text/html")
-                    .into_response()
+                html.with_status(status).into_response()
             }
             OutputType::Json => {
                 let json = Json(json!({
@@ -223,9 +221,7 @@ where
                     "pre": pre
                 }));
 
-                json.with_status(status)
-                    .with_content_type("application/json")
-                    .into_response()
+                json.with_status(status).into_response()
             }
         }
     }
