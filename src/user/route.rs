@@ -79,9 +79,9 @@ async fn login_post(
         .validate_login(data.username.clone(), data.password.clone());
     if let Some(token) = token {
         let new_cookie = Cookie::new_with_str("login-token", token)
-            .init_builder()
+            .into_builder()
             .path("/")
-            .expires(Utc::now().add(TimeDelta::days(30)))
+            .expires_by_delta(TimeDelta::days(30))
             .build();
 
         cookie_jar.add(new_cookie);

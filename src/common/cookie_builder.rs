@@ -1,5 +1,6 @@
-use chrono::{DateTime, TimeZone};
+use chrono::{DateTime, TimeDelta, TimeZone, Utc};
 use poem::web::cookie::Cookie;
+use std::ops::Add;
 use std::time::Duration;
 
 pub struct CookieBuilder {
@@ -15,6 +16,10 @@ impl CookieBuilder {
     pub fn expires(mut self, expires: DateTime<impl TimeZone>) -> Self {
         self.cookie.set_expires(expires);
         self
+    }
+
+    pub fn expires_by_delta(mut self, time_delta: TimeDelta) -> Self {
+        self.expires(Utc::now().add(time_delta))
     }
 
     pub fn http_only(mut self) -> Self {
@@ -53,11 +58,11 @@ impl CookieBuilder {
 }
 
 pub trait CookieBuilderExt {
-    fn init_builder(self) -> CookieBuilder;
+    fn into_builder(self) -> CookieBuilder;
 }
 
 impl CookieBuilderExt for Cookie {
-    fn init_builder(self) -> CookieBuilder {
+    fn into_builder(self) -> CookieBuilder {
         CookieBuilder { cookie: self }
     }
 }
