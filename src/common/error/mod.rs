@@ -1,6 +1,7 @@
 use crate::common::html::HtmlBuilder;
 use error_stack::{Context, Report, ResultExt};
 use maud::{PreEscaped, html};
+use poem::error::ResponseError;
 use poem::http::StatusCode;
 use poem::web::Json;
 use poem::{IntoResponse, Response};
@@ -183,14 +184,8 @@ where
     pub fn new(report: Report<E>) -> Self {
         Self(report, PhantomData)
     }
-}
 
-impl<E, O> IntoResponse for ErrorReportResponse<E, O>
-where
-    E: ErrorStatus,
-    O: ErrorOutput,
-{
-    fn into_response(self) -> Response {
+    fn as_root_response(&self) -> Response {
         let status = self.0.current_context().error_status();
         let pre = if cfg!(debug_assertions) {
             format!("{:?}", self.0)
@@ -224,5 +219,32 @@ where
                 json.with_status(status).into_response()
             }
         }
+    }
+}
+
+impl<E, O> IntoResponse for ErrorReportResponse<E, O>
+where
+    E: ErrorStatus,
+    O: ErrorOutput,
+{
+    fn into_response(self) -> Response {
+        self.as_root_response()
+    }
+}
+
+impl<E, O> ResponseError for ErrorReportResponse<E, O>
+where
+    E: ErrorStatus,
+    O: ErrorOutput,
+{
+    fn status(&self) -> StatusCode {
+        self.0.current_context().error_status()
+    }
+
+    fn as_response(&self) -> Response
+    where
+        Self: Error + Send + Sync + 'static,
+    {
+        self.as_root_response()
     }
 }
