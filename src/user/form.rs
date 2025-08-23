@@ -2,7 +2,7 @@ use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::validation::{
     ValidateErrorItem, ValidationErrorResponse, ValidationErrorsBuilder, ValidationOptionMarkup,
 };
-use crate::user::model::{UserFormValidated, UserRegisterFormValidated};
+use crate::user::model::{UserLoginFormValidated, UserRegisterFormValidated};
 use crate::user::validate::password::Password;
 use crate::user::validate::username::{IsUsernameTaken, Username, UsernameCheckResult};
 use maud::{Markup, html};
@@ -79,7 +79,7 @@ pub struct UserLoginForm {
 }
 
 impl UserLoginForm {
-    pub fn as_validated(&self) -> Result<UserFormValidated, ValidationErrorResponse> {
+    pub fn as_validated(&self) -> Result<UserLoginFormValidated, ValidationErrorResponse> {
         let mut builder = ValidationErrorsBuilder::new();
 
         let username = builder
@@ -91,6 +91,6 @@ impl UserLoginForm {
 
         builder.build_result()?;
 
-        Ok(UserFormValidated { username, password })
+        Ok(UserLoginFormValidated { username, password })
     }
 }

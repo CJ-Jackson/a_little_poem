@@ -24,7 +24,7 @@ pub struct UserRegisterFormValidated {
     pub password_confirm: Password,
 }
 
-pub struct UserFormValidated {
+pub struct UserLoginFormValidated {
     pub username: Username,
     pub password: Password,
 }
