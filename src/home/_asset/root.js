@@ -1,4 +1,4 @@
-import {createApp, ref} from "vue";
+import {createApp, ref} from "#vue";
 
 createApp({
     data() {

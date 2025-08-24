@@ -1,5 +1,5 @@
-import {createApp} from "vue";
-import {fetchCsrfToken} from "token"
+import {createApp} from "#vue";
+import {fetchCsrfToken} from "#token"
 
 createApp({
     data() {
