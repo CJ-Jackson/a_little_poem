@@ -1,8 +1,8 @@
 use crate::bucket_list::model::{AddToBucketListValidated, BucketListItem};
 use crate::common::context::{Context, ContextError, FromContext};
 use crate::common::db::SqliteClient;
-use crate::common::error::ErrorStatus;
 use error_stack::{Report, ResultExt};
+use poem::error::ResponseError;
 use poem::http::StatusCode;
 use rusqlite::named_params;
 use thiserror::Error;
@@ -17,8 +17,8 @@ pub enum BucketListRepositoryError {
     LockError,
 }
 
-impl ErrorStatus for BucketListRepositoryError {
-    fn error_status(&self) -> StatusCode {
+impl ResponseError for BucketListRepositoryError {
+    fn status(&self) -> StatusCode {
         StatusCode::INTERNAL_SERVER_ERROR
     }
 }

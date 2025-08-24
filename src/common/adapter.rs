@@ -1,6 +1,8 @@
-use crate::common::error::{ErrorOutput, ErrorReportResponse, ErrorStatus, HtmlErrorOutput};
+use crate::common::error::{ErrorOutput, ErrorReportResponse, HtmlErrorOutput};
 use error_stack::Report;
+use poem::error::ResponseError;
 use poem::{IntoResponse, Response};
+use std::error::Error;
 use std::marker::PhantomData;
 
 pub struct ResultAdapter<T: IntoResponse, E: IntoResponse>(Result<T, E>);
@@ -26,13 +28,13 @@ impl<T: IntoResponse, E: IntoResponse> IntoResponse for ResultAdapter<T, E> {
 pub struct ReportAdapter<T, E, O = HtmlErrorOutput>(Result<T, Report<E>>, PhantomData<O>)
 where
     T: IntoResponse,
-    E: ErrorStatus,
+    E: ResponseError + Error + Send + Sync + 'static,
     O: ErrorOutput;
 
 impl<T, E, O> ReportAdapter<T, E, O>
 where
     T: IntoResponse,
-    E: ErrorStatus,
+    E: ResponseError + Error + Send + Sync + 'static,
     O: ErrorOutput,
 {
     pub async fn execute<FUT>(f: FUT) -> Self
@@ -46,13 +48,13 @@ where
 impl<T, E, O> IntoResponse for ReportAdapter<T, E, O>
 where
     T: IntoResponse,
-    E: ErrorStatus,
+    E: ResponseError + Error + Send + Sync + 'static,
     O: ErrorOutput,
 {
     fn into_response(self) -> Response {
         match self.0 {
             Ok(t) => t.into_response(),
-            Err(e) => ErrorReportResponse::<E, O>::new(e).into_response(),
+            Err(e) => ErrorReportResponse::<E, O>::new(e).as_response(),
         }
     }
 }

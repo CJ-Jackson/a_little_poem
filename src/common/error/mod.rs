@@ -7,6 +7,7 @@ use poem::web::Json;
 use poem::{IntoResponse, Response};
 use serde_json::json;
 use std::error::Error;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use thiserror::Error;
 
@@ -142,16 +143,12 @@ where
     }
 }
 
-pub trait ErrorStatus: Error + Sized + Send + Sync + 'static {
-    fn error_status(&self) -> StatusCode;
-}
-
 pub enum OutputType {
     Html,
     Json,
 }
 
-pub trait ErrorOutput: Send + Sync + 'static {
+pub trait ErrorOutput: Debug + Send + Sync + 'static {
     const OUTPUT_TYPE: OutputType;
 
     fn output_type() -> OutputType {
@@ -159,34 +156,51 @@ pub trait ErrorOutput: Send + Sync + 'static {
     }
 }
 
+#[derive(Debug)]
 pub struct HtmlErrorOutput;
 
 impl ErrorOutput for HtmlErrorOutput {
     const OUTPUT_TYPE: OutputType = OutputType::Html;
 }
 
+#[derive(Debug)]
 pub struct JsonErrorOutput;
 
 impl ErrorOutput for JsonErrorOutput {
     const OUTPUT_TYPE: OutputType = OutputType::Json;
 }
 
+#[derive(Debug, Error)]
+#[error("Error: {0}")]
 pub struct ErrorReportResponse<E, O = HtmlErrorOutput>(pub Report<E>, PhantomData<O>)
 where
-    E: ErrorStatus,
+    E: ResponseError + Error + Send + Sync + 'static,
     O: ErrorOutput;
 
 impl<E, O> ErrorReportResponse<E, O>
 where
-    E: ErrorStatus,
+    E: ResponseError + Error + Send + Sync + 'static,
     O: ErrorOutput,
 {
     pub fn new(report: Report<E>) -> Self {
         Self(report, PhantomData)
     }
+}
 
-    fn as_root_response(&self) -> Response {
-        let status = self.0.current_context().error_status();
+impl<E, O> ResponseError for ErrorReportResponse<E, O>
+where
+    E: ResponseError + Error + Send + Sync + 'static,
+    O: ErrorOutput,
+{
+    fn status(&self) -> StatusCode {
+        self.0.current_context().status()
+    }
+
+    fn as_response(&self) -> Response
+    where
+        Self: ResponseError + Error + Send + Sync + 'static,
+    {
+        let status = self.status();
         let pre = if cfg!(debug_assertions) {
             format!("{:?}", self.0)
         } else {
@@ -224,27 +238,10 @@ where
 
 impl<E, O> IntoResponse for ErrorReportResponse<E, O>
 where
-    E: ErrorStatus,
+    E: ResponseError + Error + Send + Sync + 'static,
     O: ErrorOutput,
 {
     fn into_response(self) -> Response {
-        self.as_root_response()
-    }
-}
-
-impl<E, O> ResponseError for ErrorReportResponse<E, O>
-where
-    E: ErrorStatus,
-    O: ErrorOutput,
-{
-    fn status(&self) -> StatusCode {
-        self.0.current_context().error_status()
-    }
-
-    fn as_response(&self) -> Response
-    where
-        Self: Error + Send + Sync + 'static,
-    {
-        self.as_root_response()
+        self.as_response()
     }
 }
