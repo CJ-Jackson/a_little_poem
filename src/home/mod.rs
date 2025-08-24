@@ -4,6 +4,8 @@ use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use maud::{Markup, PreEscaped, html};
 use poem::handler;
+use poem::web::Json;
+use serde_json::{Value, json};
 
 #[handler]
 pub async fn home_page(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
@@ -43,6 +45,11 @@ fn root_js() -> Markup {
     html! {
         script type="module" { (PreEscaped(js)) }
     }
+}
+
+#[handler]
+pub async fn js_array() -> Json<Value> {
+    Json(json!(["Apple", "Orange", "Banana", "Strawberry", "Mango"]))
 }
 
 #[handler]

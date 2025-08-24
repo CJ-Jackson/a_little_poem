@@ -3,7 +3,7 @@ use crate::common::cache_local::init_cache_local;
 use crate::common::config::Config;
 use crate::common::csrf::route_csrf;
 use crate::common::html::css::main_css;
-use crate::home::{favicon, home_page};
+use crate::home::{favicon, home_page, js_array};
 use crate::user::model::UserIdContext;
 use crate::user::route::route_user;
 use error_stack::{Report, ResultExt};
@@ -35,6 +35,7 @@ async fn main() -> Result<(), Report<MainError>> {
 
     let route = Route::new()
         .at("/", get(home_page))
+        .at("/array", get(js_array))
         .at("/favicon.ico", get(favicon))
         .at("/main.css", get(main_css));
 
