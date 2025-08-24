@@ -65,8 +65,8 @@ impl FlashMessage for Session {
     }
 
     fn get_flash(&self) -> Option<Flash> {
-        let v = self.get("flash");
+        let flash = self.get("flash");
         self.remove("flash");
-        v
+        flash
     }
 }
