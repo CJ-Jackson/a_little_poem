@@ -1,5 +1,6 @@
 use error_stack::Report;
 use maud::{Markup, html};
+use poem::error::ResponseError;
 use poem::http::StatusCode;
 use poem::web::Json;
 use poem::{IntoResponse, Response};
@@ -7,6 +8,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::Display;
+use thiserror::Error;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub trait ValidateErrorItemTrait: Sized + Send + Sync + 'static {
@@ -110,15 +112,8 @@ impl OptionValidateErrorItemTrait for Option<ValidateErrorItem> {
     }
 }
 
+#[derive(Debug, Error)]
 pub struct ValidationErrorResponse(Json<Box<[ValidateErrorItem]>>);
-
-impl IntoResponse for ValidationErrorResponse {
-    fn into_response(self) -> Response {
-        self.0
-            .with_status(StatusCode::UNPROCESSABLE_ENTITY)
-            .into_response()
-    }
-}
 
 impl ValidationErrorResponse {
     pub fn as_map(&self) -> HashMap<String, ValidateErrorItem> {
@@ -148,6 +143,27 @@ impl ValidationErrorResponse {
     }
 }
 
+impl IntoResponse for ValidationErrorResponse {
+    fn into_response(self) -> Response {
+        self.0
+            .with_status(StatusCode::UNPROCESSABLE_ENTITY)
+            .into_response()
+    }
+}
+
+impl ResponseError for ValidationErrorResponse {
+    fn status(&self) -> StatusCode {
+        StatusCode::UNPROCESSABLE_ENTITY
+    }
+
+    fn as_response(&self) -> Response
+    where
+        Self: Error + Send + Sync + 'static,
+    {
+        self.0.clone().with_status(self.status()).into_response()
+    }
+}
+
 impl Display for ValidationErrorResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Ok(for item in &self.0.0 {
@@ -156,15 +172,8 @@ impl Display for ValidationErrorResponse {
     }
 }
 
+#[derive(Debug, Error)]
 pub struct ValidationErrorMergedResponse(Json<HashMap<String, Box<[ValidateErrorItem]>>>);
-
-impl IntoResponse for ValidationErrorMergedResponse {
-    fn into_response(self) -> Response {
-        self.0
-            .with_status(StatusCode::UNPROCESSABLE_ENTITY)
-            .into_response()
-    }
-}
 
 impl ValidationErrorMergedResponse {
     pub fn as_map(&self) -> HashMap<String, ValidateErrorItem> {
@@ -193,6 +202,27 @@ impl ValidationErrorMergedResponse {
             }
         }
         map
+    }
+}
+
+impl IntoResponse for ValidationErrorMergedResponse {
+    fn into_response(self) -> Response {
+        self.0
+            .with_status(StatusCode::UNPROCESSABLE_ENTITY)
+            .into_response()
+    }
+}
+
+impl ResponseError for ValidationErrorMergedResponse {
+    fn status(&self) -> StatusCode {
+        StatusCode::UNPROCESSABLE_ENTITY
+    }
+
+    fn as_response(&self) -> Response
+    where
+        Self: Error + Send + Sync + 'static,
+    {
+        self.0.clone().with_status(self.status()).into_response()
     }
 }
 
