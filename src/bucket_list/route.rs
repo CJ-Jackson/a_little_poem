@@ -3,6 +3,7 @@ use crate::bucket_list::repository::{BucketListRepository, BucketListRepositoryE
 use crate::common::adapter::{ReportAdapter, ResultAdapter};
 use crate::common::context::Dep;
 use crate::common::context::user::UserDep;
+use crate::common::csrf::CsrfHeaderChecker;
 use crate::common::error::{ErrorReportResponse, JsonErrorOutput};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
@@ -103,6 +104,7 @@ impl IntoResponse for AddBucketListRouteError {
 async fn add_bucket_list(
     repo: Dep<BucketListRepository>,
     data: Json<AddToBucketList>,
+    _csrf_header_checker: CsrfHeaderChecker,
 ) -> ResultAdapter<WithStatus<Json<Value>>, AddBucketListRouteError> {
     ResultAdapter::execute(async {
         let data = data

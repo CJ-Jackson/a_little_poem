@@ -1,4 +1,5 @@
 import {createApp} from "vue";
+import {fetchCsrfToken} from "token"
 
 createApp({
     data() {
@@ -7,9 +8,13 @@ createApp({
             input_name: "",
             input_description: "",
             error: false,
+            csrf_token: ""
         }
     },
     methods: {
+        csrfToken() {
+            fetchCsrfToken().then(token => this.csrf_token = token);
+        },
         getBucketList() {
             fetch('/bucket-list/all')
                 .then(res => res.json())
@@ -28,13 +33,16 @@ createApp({
                 name: this.input_name,
                 description: this.input_description
             }
+            let token = this.csrf_token;
             fetch('/bucket-list/add', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Csrf-Token': token,
                 },
                 body: JSON.stringify(json)
             }).then(res => {
+                this.csrfToken();
                 if (res.status === 201) {
                     this.getBucketList();
                     this.input_name = "";
@@ -54,6 +62,7 @@ createApp({
         }
     },
     mounted() {
-        this.getBucketList()
+        this.getBucketList();
+        this.csrfToken();
     },
 }).mount('#bucket-list');

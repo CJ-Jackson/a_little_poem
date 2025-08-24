@@ -25,6 +25,26 @@ impl<T: IntoResponse, E: IntoResponse> IntoResponse for ResultAdapter<T, E> {
     }
 }
 
+pub struct UnifiedResultAdapter<T: IntoResponse>(Result<T, T>);
+
+impl<T: IntoResponse> UnifiedResultAdapter<T> {
+    pub async fn execute<FUT>(f: FUT) -> Self
+    where
+        FUT: Future<Output = Result<T, T>>,
+    {
+        Self(f.await)
+    }
+}
+
+impl<T: IntoResponse> IntoResponse for UnifiedResultAdapter<T> {
+    fn into_response(self) -> Response {
+        match self.0 {
+            Ok(t) => t.into_response(),
+            Err(e) => e.into_response(),
+        }
+    }
+}
+
 pub struct ReportAdapter<T, E, O = HtmlErrorOutput>(Result<T, Report<E>>, PhantomData<O>)
 where
     T: IntoResponse,

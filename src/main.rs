@@ -1,13 +1,14 @@
 use crate::bucket_list::route::route_bucket_list;
 use crate::common::cache_local::init_cache_local;
 use crate::common::config::Config;
+use crate::common::csrf::route_csrf;
 use crate::common::html::css::main_css;
 use crate::home::{favicon, home_page};
 use crate::user::model::UserIdContext;
 use crate::user::route::route_user;
 use error_stack::{Report, ResultExt};
 use poem::listener::TcpListener;
-use poem::middleware::CookieJarManager;
+use poem::middleware::{CookieJarManager, Csrf};
 use poem::session::{CookieConfig, CookieSession};
 use poem::{EndpointExt, Route, Server, get};
 use std::sync::Arc;
@@ -39,11 +40,13 @@ async fn main() -> Result<(), Report<MainError>> {
 
     let route = route
         .nest("/bucket-list/", route_bucket_list())
-        .nest("/user/", route_user());
+        .nest("/user/", route_user())
+        .nest("/csrf/", route_csrf());
 
     let route = route
         .with(CookieJarManager::new())
         .with(CookieSession::new(CookieConfig::new()))
+        .with(Csrf::new())
         .around(init_cache_local::<Arc<UserIdContext>, _>);
 
     match config.upgrade() {

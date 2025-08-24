@@ -14,6 +14,7 @@ pub struct UserRegisterForm {
     pub username: String,
     pub password: String,
     pub password_confirm: String,
+    pub csrf_token: String,
 }
 
 impl UserRegisterForm {
@@ -51,14 +52,17 @@ impl UserRegisterForm {
         context_html_builder: &ContextHtmlBuilder,
         user_register_form: Option<UserRegisterForm>,
         errors: Option<HashMap<String, ValidateErrorItem>>,
+        token: Option<Markup>,
     ) -> Markup {
         let user_register_form = user_register_form.unwrap_or_default();
         let errors = errors.unwrap_or_default();
+        let token = token.unwrap_or_default();
         context_html_builder
             .attach_title(title.as_str())
             .attach_content(html! {
                 h1 .mt-3 { (title) }
                 form method="post" .form {
+                    (token)
                     input .form-item type="text" name="username" placeholder="Username" value=(user_register_form.username);
                     (errors.get("username").as_html())
                     input .form-item type="password" name="password" placeholder="Password";
@@ -76,6 +80,7 @@ impl UserRegisterForm {
 pub struct UserLoginForm {
     pub username: String,
     pub password: String,
+    pub csrf_token: String,
 }
 
 impl UserLoginForm {

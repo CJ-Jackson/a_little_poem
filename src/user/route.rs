@@ -1,15 +1,19 @@
+use crate::common::adapter::UnifiedResultAdapter;
 use crate::common::context::user::UserDep;
 use crate::common::cookie_builder::CookieBuilderExt;
+use crate::common::csrf::{CsrfError, CsrfTokenHtml, CsrfVerifierError};
 use crate::common::flash::{Flash, FlashMessage};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::user::flag::{LoginFlag, LogoutFlag};
 use crate::user::form::{UserLoginForm, UserRegisterForm};
 use crate::user::service::{UserLoginService, UserRegisterService};
 use chrono::TimeDelta;
+use error_stack::Report;
 use maud::{Markup, html};
+use poem::error::ResponseError;
 use poem::session::Session;
 use poem::web::cookie::{Cookie, CookieJar};
-use poem::web::{Form, Redirect};
+use poem::web::{CsrfToken, CsrfVerifier, Form, Redirect};
 use poem::{IntoResponse, Route, get, handler};
 
 #[handler]
@@ -41,7 +45,10 @@ async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Mark
 }
 
 #[handler]
-async fn login(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
+async fn login(
+    context_html_builder: UserDep<ContextHtmlBuilder>,
+    csrf_token: &CsrfToken,
+) -> Markup {
     let title = "Login".to_string();
     context_html_builder
         .0
@@ -49,6 +56,7 @@ async fn login(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
         .attach_content(html! {
             h1 .mt-3 { (title) }
             form method="post" .form {
+                (csrf_token.as_html())
                 input .form-item type="text" name="username" placeholder="Username";
                 input .form-item type="password" name="password" placeholder="Password";
                 button .btn .btn-sky-blue .mt-3 type="submit" { "Login" };
@@ -59,37 +67,60 @@ async fn login(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
         .build()
 }
 
+enum LoginPostResponse {
+    Redirect(Redirect),
+    Csrf(Report<CsrfError>),
+}
+
+impl IntoResponse for LoginPostResponse {
+    fn into_response(self) -> poem::Response {
+        match self {
+            LoginPostResponse::Redirect(redirect) => redirect.into_response(),
+            LoginPostResponse::Csrf(csrf) => csrf.current_context().as_response(),
+        }
+    }
+}
+
 #[handler]
 async fn login_post(
     user_login: UserDep<UserLoginService, LoginFlag>,
     data: Form<UserLoginForm>,
     session: &Session,
     cookie_jar: &CookieJar,
-) -> Redirect {
-    if let Ok(data) = data.0.as_validated() {
-        let token = user_login.0.validate_login(
-            data.username.as_str().to_string(),
-            data.password.as_str().to_string(),
-        );
-        if let Some(token) = token {
-            let new_cookie = Cookie::new_with_str("login-token", token)
-                .into_builder()
-                .path("/")
-                .expires_by_delta(TimeDelta::days(30))
-                .build();
+    csrf_verifier: &CsrfVerifier,
+) -> UnifiedResultAdapter<LoginPostResponse> {
+    UnifiedResultAdapter::execute(async {
+        csrf_verifier
+            .verify(data.0.csrf_token.as_str())
+            .map_err(|err| LoginPostResponse::Csrf(err))?;
+        if let Ok(data) = data.0.as_validated() {
+            let token = user_login.0.validate_login(
+                data.username.as_str().to_string(),
+                data.password.as_str().to_string(),
+            );
+            if let Some(token) = token {
+                let new_cookie = Cookie::new_with_str("login-token", token)
+                    .into_builder()
+                    .path("/")
+                    .expires_by_delta(TimeDelta::days(30))
+                    .build();
 
-            cookie_jar.add(new_cookie);
-            session.flash(Flash::Success {
-                msg: "Login succeeded".to_string(),
-            });
-            return Redirect::see_other("/user/");
+                cookie_jar.add(new_cookie);
+                session.flash(Flash::Success {
+                    msg: "Login succeeded".to_string(),
+                });
+                return Ok(LoginPostResponse::Redirect(Redirect::see_other("/user/")));
+            }
         }
-    }
 
-    session.flash(Flash::Error {
-        msg: "Login failed".to_string(),
-    });
-    Redirect::see_other("/user/login/")
+        session.flash(Flash::Error {
+            msg: "Login failed".to_string(),
+        });
+        Err(LoginPostResponse::Redirect(Redirect::see_other(
+            "/user/login/",
+        )))
+    })
+    .await
 }
 
 #[handler]
@@ -107,13 +138,23 @@ async fn logout(
 }
 
 #[handler]
-async fn register(context_html_builder: UserDep<ContextHtmlBuilder, LoginFlag>) -> Markup {
-    UserRegisterForm::html_form("Register".to_string(), &context_html_builder.0, None, None)
+async fn register(
+    context_html_builder: UserDep<ContextHtmlBuilder, LoginFlag>,
+    csrf_token: &CsrfToken,
+) -> Markup {
+    UserRegisterForm::html_form(
+        "Register".to_string(),
+        &context_html_builder.0,
+        None,
+        None,
+        Some(csrf_token.as_html()),
+    )
 }
 
 enum RegisterPostResponse {
     Redirect(Redirect),
     Markup(Markup),
+    Csrf(Report<CsrfError>),
 }
 
 impl IntoResponse for RegisterPostResponse {
@@ -121,6 +162,7 @@ impl IntoResponse for RegisterPostResponse {
         match self {
             RegisterPostResponse::Redirect(redirect) => redirect.into_response(),
             RegisterPostResponse::Markup(markup) => markup.into_response(),
+            RegisterPostResponse::Csrf(csrf) => csrf.current_context().as_response(),
         }
     }
 }
@@ -131,32 +173,45 @@ async fn register_post(
     data: Form<UserRegisterForm>,
     context_html_builder: UserDep<ContextHtmlBuilder>,
     session: &Session,
-) -> RegisterPostResponse {
-    let validated_data = data.as_validated(&user_register_service.0).await;
-    match validated_data {
-        Ok(data) => {
-            if user_register_service.0.register_user(
-                data.username.as_str().to_string(),
-                data.password.as_str().to_string(),
-            ) {
-                session.flash(Flash::Success {
-                    msg: "Register succeeded".to_string(),
-                });
-                RegisterPostResponse::Redirect(Redirect::see_other("/user/login/"))
-            } else {
-                session.flash(Flash::Error {
-                    msg: "Register failed".to_string(),
-                });
-                RegisterPostResponse::Redirect(Redirect::see_other("/user/register/"))
+    csrf_verifier: &CsrfVerifier,
+    csrf_token: &CsrfToken,
+) -> UnifiedResultAdapter<RegisterPostResponse> {
+    UnifiedResultAdapter::execute(async {
+        csrf_verifier
+            .verify(data.0.csrf_token.as_str())
+            .map_err(|err| RegisterPostResponse::Csrf(err))?;
+        let validated_data = data.as_validated(&user_register_service.0).await;
+        match validated_data {
+            Ok(data) => {
+                if user_register_service.0.register_user(
+                    data.username.as_str().to_string(),
+                    data.password.as_str().to_string(),
+                ) {
+                    session.flash(Flash::Success {
+                        msg: "Register succeeded".to_string(),
+                    });
+                    Ok(RegisterPostResponse::Redirect(Redirect::see_other(
+                        "/user/login/",
+                    )))
+                } else {
+                    session.flash(Flash::Error {
+                        msg: "Register failed".to_string(),
+                    });
+                    Err(RegisterPostResponse::Redirect(Redirect::see_other(
+                        "/user/register/",
+                    )))
+                }
             }
+            Err(err) => Err(RegisterPostResponse::Markup(UserRegisterForm::html_form(
+                "Register".to_string(),
+                &context_html_builder.0,
+                Some(data.0.clone()),
+                Some(err.as_map()),
+                Some(csrf_token.as_html()),
+            ))),
         }
-        Err(err) => RegisterPostResponse::Markup(UserRegisterForm::html_form(
-            "Register".to_string(),
-            &context_html_builder.0,
-            Some(data.0.clone()),
-            Some(err.as_map()),
-        )),
-    }
+    })
+    .await
 }
 
 pub fn route_user() -> Route {

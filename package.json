@@ -4,6 +4,7 @@
     "tailwindcss": "^4.1.11"
   },
   "imports": {
-    "#vue": "./asset/js/vue.esm-browser.js"
+    "#vue": "./asset/js/vue.esm-browser.js",
+    "#token": "./src/common/csrf/_asset/token.js"
   }
 }
