@@ -14,6 +14,7 @@ cmds: list = [
 ]
 
 for cmd in cmds:
+    # subprocess.run(cmd)
     subprocess.run(cmd, env=os.environ | {
         "MINIFY": "true"
     })

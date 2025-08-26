@@ -12,11 +12,18 @@ for item in Path('src').glob('**/_asset/*.js').__iter__():
         continue
     output = item.with_name(item.stem + '.min.js')
     subprocess.run(['minify', '-o', output, item])
-    print(output)
+    # print(output)
+
+# for item in Path('src').glob('**/_asset/*.css').__iter__():
+#     if str(item).endswith('min.css'):
+#         continue
+#     output = item.with_name(item.stem + '.min.css')
+#     subprocess.run(['minify', '--css-precision', '0', '-o', output, item])
+    # print(output)
 
 for item in Path('src').glob('**/_asset/*.json').__iter__():
     if str(item).endswith('min.json'):
         continue
     output = item.with_name(item.stem + '.min.json')
     subprocess.run(['minify', '-o', output, item])
-    print(output)
+    # print(output)
