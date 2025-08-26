@@ -3,6 +3,8 @@ import os
 import subprocess
 from pathlib import Path
 
+# https://registry.npmjs.org/tailwindcss/-/tailwindcss-4.1.12.tgz to asset/tailwindcss
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 minify = False
