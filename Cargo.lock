@@ -10,7 +10,6 @@ dependencies = [
  "chrono",
  "error-stack",
  "figment",
- "log",
  "maud",
  "poem",
  "rmp-serde",
