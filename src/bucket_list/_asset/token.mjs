@@ -1,0 +1,1 @@
+../../common/csrf/_asset/token.js
