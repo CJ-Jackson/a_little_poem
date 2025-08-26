@@ -17,7 +17,7 @@ for key, value in map_css.items():
     if minify:
         value = Path(value)
         value = value.with_name(value.stem + '.min.css')
-        subprocess.run(['npx', '@tailwindcss/cli', '-i', key, '-o', value, '--minify'])
+        subprocess.run(['tailwindcss', '-i', key, '-o', value, '--minify'])
     else:
-        subprocess.run(['npx', '@tailwindcss/cli', '-i', key, '-o', value])
+        subprocess.run(['tailwindcss', '-i', key, '-o', value])
     print(f"{key} -> {value}")
