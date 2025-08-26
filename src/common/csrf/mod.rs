@@ -1,4 +1,3 @@
-use crate::common::etag::{EtagCheck, EtagStamp};
 use error_stack::{Report, ResultExt};
 use maud::{Markup, html};
 use poem::error::ResponseError;
@@ -72,21 +71,7 @@ async fn fetch_csrf_token(token: &CsrfToken) -> Json<Value> {
     Json(json!({"token": token.0}))
 }
 
-#[handler]
-async fn js_token(_etag_check: EtagCheck) -> EtagStamp {
-    #[cfg(debug_assertions)]
-    let v = *include_bytes!("_asset/token.js");
-    #[cfg(not(debug_assertions))]
-    let v = *include_bytes!("_asset/token.min.js");
-
-    EtagStamp {
-        data: v.into(),
-        content_type: "application/javascript; charset=utf-8",
-    }
-}
-
 pub fn route_csrf() -> poem::Route {
     poem::Route::new()
         .at("/token", fetch_csrf_token)
-        .at("/token.js", js_token)
 }

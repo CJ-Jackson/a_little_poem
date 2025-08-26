@@ -13,6 +13,7 @@ use poem::session::{CookieConfig, CookieSession};
 use poem::{EndpointExt, Route, Server, get};
 use std::sync::Arc;
 use thiserror::Error;
+use crate::common::common_js;
 
 pub mod bucket_list;
 pub mod common;
@@ -37,7 +38,8 @@ async fn main() -> Result<(), Report<MainError>> {
         .at("/", get(home_page))
         .at("/array", get(js_array))
         .at("/favicon.ico", get(favicon))
-        .at("/main.css", get(main_css));
+        .at("/main.css", get(main_css))
+        .at("/common.js", get(common_js));
 
     let route = route
         .nest("/bucket-list/", route_bucket_list())
