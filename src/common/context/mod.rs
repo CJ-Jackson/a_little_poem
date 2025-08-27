@@ -53,11 +53,9 @@ impl Context<'_> {
     }
 }
 
-pub struct Dependency<T: FromContext>(pub T);
+pub struct Dep<T: FromContext>(pub T);
 
-pub type Dep<T> = Dependency<T>;
-
-impl<'a, T: FromContext> FromRequest<'a> for Dependency<T> {
+impl<'a, T: FromContext> FromRequest<'a> for Dep<T> {
     async fn from_request(req: &'a Request, _body: &mut RequestBody) -> poem::Result<Self> {
         let config = match Config::fetch().await {
             Ok(config) => config,

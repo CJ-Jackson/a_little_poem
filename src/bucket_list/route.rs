@@ -2,7 +2,7 @@ use crate::bucket_list::model::{AddToBucketList, BucketListItem};
 use crate::bucket_list::repository::{BucketListRepository, BucketListRepositoryError};
 use crate::common::adapter::{ReportAdapter, ResultAdapter};
 use crate::common::context::Dep;
-use crate::common::context::user::UserDep;
+use crate::common::context::user::JustDep;
 use crate::common::csrf::CsrfHeaderChecker;
 use crate::common::error::{ErrorReportResponse, JsonErrorOutput};
 use crate::common::html::context_html::ContextHtmlBuilder;
@@ -15,10 +15,9 @@ use poem::{IntoResponse, Response, Route, get, handler, post};
 use serde_json::{Value, json};
 
 #[handler]
-async fn main_bucket_list(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
+async fn main_bucket_list(JustDep(context_html_builder, _): JustDep<ContextHtmlBuilder>) -> Markup {
     let title = "Bucket List";
     context_html_builder
-        .0
         .attach_title(title)
         .set_current_tag("bucket-list")
         .attach_content(html! {
@@ -77,10 +76,10 @@ fn get_bucket_list_js() -> Markup {
 
 #[handler]
 async fn all_bucket_list(
-    repo: Dep<BucketListRepository>,
+    Dep(repo): Dep<BucketListRepository>,
 ) -> ReportAdapter<Json<Box<[BucketListItem]>>, BucketListRepositoryError, JsonErrorOutput> {
     ReportAdapter::execute(async {
-        let items = repo.0.get_all_from_bucket_list()?;
+        let items = repo.get_all_from_bucket_list()?;
         Ok(Json(items))
     })
     .await
@@ -102,8 +101,8 @@ impl IntoResponse for AddBucketListRouteError {
 
 #[handler]
 async fn add_bucket_list(
-    repo: Dep<BucketListRepository>,
-    data: Json<AddToBucketList>,
+    Dep(repo): Dep<BucketListRepository>,
+    Json(data): Json<AddToBucketList>,
     _csrf_header_checker: CsrfHeaderChecker,
 ) -> ResultAdapter<WithStatus<Json<Value>>, AddBucketListRouteError> {
     ResultAdapter::execute(async {
@@ -111,8 +110,7 @@ async fn add_bucket_list(
             .to_validated()
             .map_err(|e| AddBucketListRouteError::Validate(e))?;
 
-        repo.0
-            .add_to_bucket_list(&data)
+        repo.add_to_bucket_list(&data)
             .map_err(|e| AddBucketListRouteError::Repo(ErrorReportResponse::new(e)))?;
 
         Ok(Json(json!({"message": "Success"})).with_status(StatusCode::CREATED))

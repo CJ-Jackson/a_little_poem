@@ -56,14 +56,12 @@ pub struct DefaultFlag;
 
 impl UserContextDependencyFlag for DefaultFlag {}
 
-pub struct UserDependency<T, F = DefaultFlag>(pub T, pub Arc<UserIdContext>, PhantomData<F>)
+pub struct UserDep<T, F = DefaultFlag>(pub T, pub Arc<UserIdContext>, pub PhantomData<F>)
 where
     T: FromUserContext,
     F: UserContextDependencyFlag;
 
-pub type UserDep<T, F = DefaultFlag> = UserDependency<T, F>;
-
-impl<'a, T, F> FromRequest<'a> for UserDependency<T, F>
+impl<'a, T, F> FromRequest<'a> for UserDep<T, F>
 where
     T: FromUserContext,
     F: UserContextDependencyFlag,
@@ -112,5 +110,21 @@ where
             Arc::clone(&user_id_context),
             PhantomData,
         ))
+    }
+}
+
+pub struct JustDep<T, F = DefaultFlag>(pub T, pub PhantomData<F>)
+where
+    T: FromUserContext,
+    F: UserContextDependencyFlag;
+
+impl<'a, T, F> FromRequest<'a> for JustDep<T, F>
+where
+    T: FromUserContext,
+    F: UserContextDependencyFlag,
+{
+    async fn from_request(req: &'a Request, body: &mut RequestBody) -> poem::Result<Self> {
+        let dep = UserDep::<T>::from_request(req, body).await?;
+        Ok(Self(dep.0, PhantomData))
     }
 }

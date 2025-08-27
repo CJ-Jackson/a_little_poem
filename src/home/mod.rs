@@ -1,4 +1,4 @@
-use crate::common::context::user::UserDep;
+use crate::common::context::user::JustDep;
 use crate::common::etag::{EtagCheck, EtagStamp};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
@@ -8,10 +8,9 @@ use poem::web::Json;
 use serde_json::{Value, json};
 
 #[handler]
-pub async fn home_page(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
+pub async fn home_page(JustDep(context_html_builder, _): JustDep<ContextHtmlBuilder>) -> Markup {
     let title = "Rust Vue Exercise";
     context_html_builder
-        .0
         .attach_title(title)
         .set_current_tag("home")
         .attach_content(html! {

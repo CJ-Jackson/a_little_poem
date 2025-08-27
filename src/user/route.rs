@@ -1,5 +1,5 @@
 use crate::common::adapter::UnifiedResultAdapter;
-use crate::common::context::user::UserDep;
+use crate::common::context::user::{JustDep, UserDep};
 use crate::common::cookie_builder::CookieBuilderExt;
 use crate::common::csrf::{CsrfError, CsrfTokenHtml, CsrfVerifierError};
 use crate::common::flash::{Flash, FlashMessage};
@@ -17,22 +17,23 @@ use poem::web::{CsrfToken, CsrfVerifier, Form, Redirect};
 use poem::{IntoResponse, Route, get, handler};
 
 #[handler]
-async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Markup {
-    let title = if context_html_builder.1.is_user {
-        format!("User: {}", context_html_builder.1.username)
+async fn display_user(
+    UserDep(context_html_builder, user, _): UserDep<ContextHtmlBuilder>,
+) -> Markup {
+    let title = if user.is_user {
+        format!("User: {}", user.username)
     } else {
         "Visitor".to_string()
     };
 
     context_html_builder
-        .0
         .attach_title(title.as_str())
         .set_current_tag("user")
         .attach_content(html! {
             h1 .mt-3 { (title) }
             p { "Welcome to the user page!" }
-            @if context_html_builder.1.is_user {
-                p { "You are logged in as a user '" (context_html_builder.1.username) "'." }
+            @if user.is_user {
+                p { "You are logged in as a user '" (user.username) "'." }
                 p { "You can log out by clicking the button below." }
                 a .btn .btn-sky-blue .mt-3 href="/user/logout/" { "Log out" }
             } @else {
@@ -46,12 +47,11 @@ async fn display_user(context_html_builder: UserDep<ContextHtmlBuilder>) -> Mark
 
 #[handler]
 async fn login(
-    context_html_builder: UserDep<ContextHtmlBuilder>,
+    JustDep(context_html_builder, _): JustDep<ContextHtmlBuilder>,
     csrf_token: &CsrfToken,
 ) -> Markup {
     let title = "Login".to_string();
     context_html_builder
-        .0
         .attach_title(title.as_str())
         .attach_content(html! {
             h1 .mt-3 { (title) }
@@ -83,18 +83,18 @@ impl IntoResponse for LoginPostResponse {
 
 #[handler]
 async fn login_post(
-    user_login: UserDep<UserLoginService, LoginFlag>,
-    data: Form<UserLoginForm>,
+    JustDep(user_login, _): JustDep<UserLoginService, LoginFlag>,
+    Form(data): Form<UserLoginForm>,
     session: &Session,
     cookie_jar: &CookieJar,
     csrf_verifier: &CsrfVerifier,
 ) -> UnifiedResultAdapter<LoginPostResponse> {
     UnifiedResultAdapter::execute(async {
         csrf_verifier
-            .verify(data.0.csrf_token.as_str())
+            .verify(data.csrf_token.as_str())
             .map_err(|err| LoginPostResponse::Csrf(err))?;
-        if let Ok(data) = data.0.as_validated() {
-            let token = user_login.0.validate_login(
+        if let Ok(data) = data.as_validated() {
+            let token = user_login.validate_login(
                 data.username.as_str().to_string(),
                 data.password.as_str().to_string(),
             );
@@ -125,11 +125,11 @@ async fn login_post(
 
 #[handler]
 async fn logout(
-    user_login_service: UserDep<UserLoginService, LogoutFlag>,
+    JustDep(user_login_service, _): JustDep<UserLoginService, LogoutFlag>,
     session: &Session,
     cookie: &CookieJar,
 ) -> Redirect {
-    user_login_service.0.logout();
+    user_login_service.logout();
     cookie.remove("login-token");
     session.flash(Flash::Success {
         msg: "Logout succeeded".to_string(),
@@ -139,12 +139,12 @@ async fn logout(
 
 #[handler]
 async fn register(
-    context_html_builder: UserDep<ContextHtmlBuilder, LoginFlag>,
+    JustDep(context_html_builder, _): JustDep<ContextHtmlBuilder, LoginFlag>,
     csrf_token: &CsrfToken,
 ) -> Markup {
     UserRegisterForm::html_form(
         "Register".to_string(),
-        &context_html_builder.0,
+        &context_html_builder,
         None,
         None,
         Some(csrf_token.as_html()),
@@ -169,21 +169,21 @@ impl IntoResponse for RegisterPostResponse {
 
 #[handler]
 async fn register_post(
-    user_register_service: UserDep<UserRegisterService, LoginFlag>,
-    data: Form<UserRegisterForm>,
-    context_html_builder: UserDep<ContextHtmlBuilder>,
+    JustDep(user_register_service, _): JustDep<UserRegisterService, LoginFlag>,
+    Form(data): Form<UserRegisterForm>,
+    JustDep(context_html_builder, _): JustDep<ContextHtmlBuilder>,
     session: &Session,
     csrf_verifier: &CsrfVerifier,
     csrf_token: &CsrfToken,
 ) -> UnifiedResultAdapter<RegisterPostResponse> {
     UnifiedResultAdapter::execute(async {
         csrf_verifier
-            .verify(data.0.csrf_token.as_str())
+            .verify(data.csrf_token.as_str())
             .map_err(|err| RegisterPostResponse::Csrf(err))?;
-        let validated_data = data.as_validated(&user_register_service.0).await;
+        let validated_data = data.as_validated(&user_register_service).await;
         match validated_data {
             Ok(data) => {
-                if user_register_service.0.register_user(
+                if user_register_service.register_user(
                     data.username.as_str().to_string(),
                     data.password.as_str().to_string(),
                 ) {
@@ -204,8 +204,8 @@ async fn register_post(
             }
             Err(err) => Err(RegisterPostResponse::Markup(UserRegisterForm::html_form(
                 "Register".to_string(),
-                &context_html_builder.0,
-                Some(data.0.clone()),
+                &context_html_builder,
+                Some(data.clone()),
                 Some(err.as_map()),
                 Some(csrf_token.as_html()),
             ))),
