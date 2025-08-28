@@ -1,8 +1,9 @@
-use crate::bucket_list::validate::description::Description;
-use crate::bucket_list::validate::name::Name;
-use crate::common::validation::{ValidationErrorResponse, ValidationErrorsBuilder};
+use crate::bucket_list::validate::description::{Description, DescriptionError};
+use crate::bucket_list::validate::name::{Name, NameError};
+use crate::common::validation::error_flag;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Serialize, Debug)]
 pub struct BucketListItem {
@@ -19,23 +20,45 @@ pub struct AddToBucketList {
 }
 
 impl AddToBucketList {
-    pub fn to_validated(&self) -> Result<AddToBucketListValidated, ValidationErrorResponse> {
-        let mut builder = ValidationErrorsBuilder::new();
+    pub fn to_validated(&self) -> Result<AddToBucketListValidated, AddToBucketListValidationError> {
+        let mut flag = false;
 
-        let name = builder
-            .add_item_from_trait(Name::parse(self.name.clone(), None))
-            .unwrap_or_default();
-        let description = builder
-            .add_item_from_trait(Description::parse(self.description.clone(), None))
-            .unwrap_or_default();
+        use error_flag as ef;
+        let name = ef(&mut flag, Name::parse(self.name.clone()));
+        let description = ef(&mut flag, Description::parse(self.description.clone()));
 
-        builder.build_result()?;
+        if flag {
+            return Err(AddToBucketListValidationError { name, description });
+        }
 
-        Ok(AddToBucketListValidated { name, description })
+        Ok(AddToBucketListValidated {
+            name: name.unwrap_or_default(),
+            description: description.unwrap_or_default(),
+        })
     }
 }
 
 pub struct AddToBucketListValidated {
     pub name: Name,
     pub description: Description,
+}
+
+pub struct AddToBucketListValidationError {
+    pub name: Result<Name, NameError>,
+    pub description: Result<Description, DescriptionError>,
+}
+
+impl Into<AddToBucketListValidationErrorResponse> for AddToBucketListValidationError {
+    fn into(self) -> AddToBucketListValidationErrorResponse {
+        AddToBucketListValidationErrorResponse {
+            name: self.name.err().map(|e| e.0).unwrap_or_default(),
+            description: self.description.err().map(|e| e.0).unwrap_or_default(),
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct AddToBucketListValidationErrorResponse {
+    pub name: Arc<[String]>,
+    pub description: Arc<[String]>,
 }

@@ -390,3 +390,14 @@ impl StrValidationExtension for String {
         StringValidator::new(self)
     }
 }
+
+pub trait ValidationCheck: Sized {
+    fn validation_check(strings: Vec<String>) -> Result<(), Self>;
+}
+
+pub fn error_flag<T, E>(flag: &mut bool, res: Result<T, E>) -> Result<T, E> {
+    if res.is_err() {
+        *flag = true;
+    }
+    res
+}

@@ -51,11 +51,7 @@ createApp({
                 } else if (res.status === 422) {
                     let content = res.json();
                     content.then(data => {
-                        let sorted = {};
-                        for (let key in data) {
-                            sorted[data[key].field_name] = data[key].messages;
-                        }
-                        this.error = sorted;
+                        this.error = data;
                     });
                 }
             })

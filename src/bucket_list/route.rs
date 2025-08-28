@@ -1,4 +1,6 @@
-use crate::bucket_list::model::{AddToBucketList, BucketListItem};
+use crate::bucket_list::model::{
+    AddToBucketList, AddToBucketListValidationErrorResponse, BucketListItem,
+};
 use crate::bucket_list::repository::{BucketListRepository, BucketListRepositoryError};
 use crate::common::adapter::{ReportAdapter, ResultAdapter};
 use crate::common::context::Dep;
@@ -7,7 +9,6 @@ use crate::common::csrf::CsrfHeaderChecker;
 use crate::common::error::{ErrorReportResponse, JsonErrorOutput};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
-use crate::common::validation::ValidationErrorResponse;
 use maud::{Markup, PreEscaped, html};
 use poem::http::StatusCode;
 use poem::web::{Json, WithStatus};
@@ -87,14 +88,16 @@ async fn all_bucket_list(
 
 enum AddBucketListRouteError {
     Repo(ErrorReportResponse<BucketListRepositoryError, JsonErrorOutput>),
-    Validate(ValidationErrorResponse),
+    Validate(Json<AddToBucketListValidationErrorResponse>),
 }
 
 impl IntoResponse for AddBucketListRouteError {
     fn into_response(self) -> Response {
         match self {
             Self::Repo(err) => err.into_response(),
-            Self::Validate(err) => err.into_response(),
+            Self::Validate(err) => err
+                .with_status(StatusCode::UNPROCESSABLE_ENTITY)
+                .into_response(),
         }
     }
 }
@@ -108,7 +111,7 @@ async fn add_bucket_list(
     ResultAdapter::execute(async {
         let data = data
             .to_validated()
-            .map_err(|e| AddBucketListRouteError::Validate(e))?;
+            .map_err(|e| AddBucketListRouteError::Validate(Json(e.into())))?;
 
         repo.add_to_bucket_list(&data)
             .map_err(|e| AddBucketListRouteError::Repo(ErrorReportResponse::new(e)))?;
