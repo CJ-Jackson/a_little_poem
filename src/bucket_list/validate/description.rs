@@ -26,7 +26,7 @@ impl Description {
 
         let mut check_count = true;
         description_validator.is_empty().then(|| {
-            message.push("Is required".to_string());
+            message.push("Required".to_string());
             check_count = false;
         });
         check_count.then(|| {
