@@ -1,4 +1,4 @@
-use crate::common::adapter::UnifiedResultAdapter;
+use crate::common::adapter::unified;
 use crate::common::context::user::{JustDep, UserDep};
 use crate::common::cookie_builder::CookieBuilderExt;
 use crate::common::csrf::{CsrfError, CsrfTokenHtml, CsrfVerifierError};
@@ -88,8 +88,8 @@ async fn login_post(
     session: &Session,
     cookie_jar: &CookieJar,
     csrf_verifier: &CsrfVerifier,
-) -> UnifiedResultAdapter<LoginPostResponse> {
-    UnifiedResultAdapter::execute(async {
+) -> LoginPostResponse {
+    unified(async {
         csrf_verifier
             .verify(data.csrf_token.as_str())
             .map_err(|err| LoginPostResponse::Csrf(err))?;
@@ -175,8 +175,8 @@ async fn register_post(
     session: &Session,
     csrf_verifier: &CsrfVerifier,
     csrf_token: &CsrfToken,
-) -> UnifiedResultAdapter<RegisterPostResponse> {
-    UnifiedResultAdapter::execute(async {
+) -> RegisterPostResponse {
+    unified(async {
         csrf_verifier
             .verify(data.csrf_token.as_str())
             .map_err(|err| RegisterPostResponse::Csrf(err))?;
