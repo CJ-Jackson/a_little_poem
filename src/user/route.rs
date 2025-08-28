@@ -206,7 +206,7 @@ async fn register_post(
                 "Register".to_string(),
                 &context_html_builder,
                 Some(data.clone()),
-                Some(err.as_map()),
+                Some(err.into()),
                 Some(csrf_token.as_html()),
             ))),
         }

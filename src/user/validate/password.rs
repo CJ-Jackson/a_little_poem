@@ -1,107 +1,75 @@
-use crate::common::validation::{
-    OptionValidateErrorItemTrait, StrValidationExtension, ValidateErrorItem, ValidateErrorItemTrait,
-};
-use error_stack::Report;
+use crate::common::validation::{StrValidationExtension, ValidationCheck};
+use std::sync::Arc;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 #[error("Password is invalid")]
-pub struct PasswordError(ValidateErrorItem);
+pub struct PasswordError(pub Arc<[String]>);
 
-impl ValidateErrorItemTrait for PasswordError {
-    fn get_validate_error_item(&self) -> Option<ValidateErrorItem> {
-        Some(self.0.clone())
+impl ValidationCheck for PasswordError {
+    fn validation_check(strings: Vec<String>) -> Result<(), Self> {
+        if strings.is_empty() {
+            Ok(())
+        } else {
+            Err(Self(strings.into()))
+        }
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Password(String);
 
 impl Password {
-    pub fn parse(
-        password: String,
-        field_name: Option<String>,
-    ) -> Result<Self, Report<PasswordError>> {
+    pub fn parse(password: String) -> Result<Self, PasswordError> {
         let mut message: Vec<String> = vec![];
-        let field_name = field_name.unwrap_or("password".to_string());
-        let field_name_no_underscore = field_name.replace("_", " ");
         let password_validator = password.as_string_validator();
 
         let mut check_count_and_chars = true;
         password_validator.is_empty().then(|| {
-            message.push(format!("{} cannot be empty", &field_name_no_underscore));
+            message.push("Cannot be empty".to_string());
             check_count_and_chars = false;
         });
         check_count_and_chars.then(|| {
             (password_validator.count_graphemes() < 8).then(|| {
-                message.push(format!(
-                    "{} must be at least 8 characters",
-                    &field_name_no_underscore
-                ));
+                message.push("Must be at least 8 characters".to_string());
             });
             (password_validator.count_graphemes() > 64).then(|| {
-                message.push(format!(
-                    "{} must be at most 64 characters",
-                    &field_name_no_underscore
-                ));
+                message.push("Must be at most 64 characters".to_string());
             });
             (!password_validator.has_ascii_uppercase_and_lowercase()).then(|| {
-                message.push(format!(
-                    "{} must contain at least one uppercase and lowercase letter",
-                    &field_name_no_underscore
-                ));
+                message
+                    .push("Must contain at least one uppercase and lowercase letter".to_string());
             });
             (!password_validator.has_special_chars()).then(|| {
-                message.push(format!(
-                    "{} must contain at least one special character",
-                    &field_name_no_underscore
-                ));
+                message.push("Must contain at least one special character".to_string());
             });
             (!password_validator.has_ascii_digit()).then(|| {
-                message.push(format!(
-                    "{} must contain at least one digit",
-                    &field_name_no_underscore
-                ));
+                message.push("Must contain at least one digit".to_string());
             })
         });
 
-        ValidateErrorItem::from_vec(field_name, message).then_err_report(|s| PasswordError(s))?;
+        PasswordError::validation_check(message)?;
         Ok(Self(password))
     }
 
-    pub fn parse_login(
-        password: String,
-        field_name: Option<String>,
-    ) -> Result<Self, Report<PasswordError>> {
+    pub fn parse_login(password: String) -> Result<Self, PasswordError> {
         let mut message: Vec<String> = vec![];
-        let field_name = field_name.unwrap_or("password".to_string());
-        let field_name_no_underscore = field_name.replace("_", " ");
         let password_validator = password.as_string_validator();
 
         (password_validator.count_graphemes() > 64).then(|| {
-            message.push(format!(
-                "{} must be at most 64 characters",
-                &field_name_no_underscore
-            ));
+            message.push("Must be at most 64 characters".to_string());
         });
 
-        ValidateErrorItem::from_vec(field_name, message).then_err_report(|s| PasswordError(s))?;
+        PasswordError::validation_check(message)?;
         Ok(Self(password))
     }
 
-    pub fn parse_confirm(
-        &self,
-        password_confirm: String,
-        field_name: Option<String>,
-    ) -> Result<Self, Report<PasswordError>> {
+    pub fn parse_confirm(&self, password_confirm: String) -> Result<Self, PasswordError> {
         let mut message: Vec<String> = vec![];
-        let field_name = field_name.unwrap_or("password_confirm".to_string());
-        let field_name_no_underscore = field_name.replace("_", " ");
 
-        (password_confirm != self.as_str())
-            .then(|| message.push(format!("{} does not match", &field_name_no_underscore)));
+        (password_confirm != self.as_str()).then(|| message.push("Does not match".to_string()));
 
-        ValidateErrorItem::from_vec(field_name, message).then_err_report(|s| PasswordError(s))?;
+        PasswordError::validation_check(message)?;
         Ok(Self(password_confirm))
     }
 
@@ -116,64 +84,64 @@ mod tests {
 
     #[test]
     fn test_password_parse() {
-        let password = Password::parse("Hello@Wor1d".to_string(), None);
+        let password = Password::parse("Hello@Wor1d".to_string());
         assert!(password.is_ok());
     }
 
     #[test]
     fn test_password_parse_error_empty_string() {
-        let password = Password::parse("".to_string(), None);
+        let password = Password::parse("".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_too_short() {
-        let password = Password::parse("a".to_string(), None);
+        let password = Password::parse("a".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_too_long() {
         let password_str = "a".repeat(65);
-        let password = Password::parse(password_str, None);
+        let password = Password::parse(password_str);
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_lower_case_only() {
-        let password = Password::parse("hello@wor1d".to_string(), None);
+        let password = Password::parse("hello@wor1d".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_upper_case_only() {
-        let password = Password::parse("HELLO@WOR1D".to_string(), None);
+        let password = Password::parse("HELLO@WOR1D".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_special_char_only() {
-        let password = Password::parse("!@#$%^&*()".to_string(), None);
+        let password = Password::parse("!@#$%^&*()".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_digit_only() {
-        let password = Password::parse("1234567890".to_string(), None);
+        let password = Password::parse("1234567890".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_password_confirmation_mismatch() {
         let password = Password("match".to_string());
-        let password = password.parse_confirm("mismatch".to_string(), None);
+        let password = password.parse_confirm("mismatch".to_string());
         assert!(password.is_err());
     }
 
     #[test]
     fn test_password_parse_error_password_confirmation_match() {
         let password = Password("match".to_string());
-        let password = password.parse_confirm("match".to_string(), None);
+        let password = password.parse_confirm("match".to_string());
         assert!(password.is_ok());
     }
 }

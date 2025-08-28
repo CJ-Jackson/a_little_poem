@@ -1,13 +1,13 @@
 use crate::common::html::context_html::ContextHtmlBuilder;
-use crate::common::validation::{
-    ValidateErrorItem, ValidationErrorResponse, ValidationErrorsBuilder, ValidationOptionMarkup,
+use crate::common::validation::{arc_string_to_html, error_flag};
+use crate::user::model::{
+    UserLoginFormValidated, UserLoginFormValidationError, UserLoginFormValidationErrorMessage,
+    UserRegisterFormValidated,
 };
-use crate::user::model::{UserLoginFormValidated, UserRegisterFormValidated};
 use crate::user::validate::password::Password;
 use crate::user::validate::username::{IsUsernameTaken, Username, UsernameCheckResult};
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct UserRegisterForm {
@@ -21,29 +21,39 @@ impl UserRegisterForm {
     pub async fn as_validated<T: IsUsernameTaken>(
         &self,
         is_username_taken: &T,
-    ) -> Result<UserRegisterFormValidated, ValidationErrorResponse> {
-        let mut builder = ValidationErrorsBuilder::new();
+    ) -> Result<UserRegisterFormValidated, UserLoginFormValidationError> {
+        let mut flag = false;
+        let default_password = Password::default();
 
-        let username = builder
-            .add_item_from_trait(
-                Username::parse(self.username.clone(), None)
-                    .check_username_result(is_username_taken, None)
-                    .await,
-            )
-            .unwrap_or_default();
-        let password = builder
-            .add_item_from_trait(Password::parse(self.password.clone(), None))
-            .unwrap_or_default();
-        let password_confirm = builder
-            .add_item_from_trait(password.parse_confirm(self.password_confirm.clone(), None))
-            .unwrap_or_default();
+        use error_flag as ef;
+        let username = ef(
+            &mut flag,
+            Username::parse(self.username.clone())
+                .check_username_result(is_username_taken)
+                .await,
+        );
+        let password = ef(&mut flag, Password::parse(self.password.clone()));
+        let password_confirm = ef(
+            &mut flag,
+            password
+                .as_ref()
+                .ok()
+                .unwrap_or(&default_password)
+                .parse_confirm(self.password_confirm.clone()),
+        );
 
-        builder.build_result()?;
+        if flag {
+            return Err(UserLoginFormValidationError {
+                username,
+                password,
+                password_confirm,
+            });
+        }
 
         Ok(UserRegisterFormValidated {
-            username,
-            password,
-            password_confirm,
+            username: username.unwrap_or_default(),
+            password: password.unwrap_or_default(),
+            password_confirm: password_confirm.unwrap_or_default(),
         })
     }
 
@@ -51,7 +61,7 @@ impl UserRegisterForm {
         title: String,
         context_html_builder: &ContextHtmlBuilder,
         user_register_form: Option<UserRegisterForm>,
-        errors: Option<HashMap<String, ValidateErrorItem>>,
+        errors: Option<UserLoginFormValidationErrorMessage>,
         token: Option<Markup>,
     ) -> Markup {
         let user_register_form = user_register_form.unwrap_or_default();
@@ -64,11 +74,11 @@ impl UserRegisterForm {
                 form method="post" .form {
                     (token)
                     input .form-item type="text" name="username" placeholder="Username" value=(user_register_form.username);
-                    (errors.get("username").as_html())
+                    (arc_string_to_html(errors.username))
                     input .form-item type="password" name="password" placeholder="Password";
-                    (errors.get("password").as_html())
+                    (arc_string_to_html(errors.password))
                     input .form-item type="password" name="password_confirm" placeholder="Confirm password";
-                    (errors.get("password_confirm").as_html())
+                    (arc_string_to_html(errors.password_confirm))
                     button .btn .btn-sky-blue .mt-3 type="submit" { "Register" };
                 }
             })
@@ -84,18 +94,24 @@ pub struct UserLoginForm {
 }
 
 impl UserLoginForm {
-    pub fn as_validated(&self) -> Result<UserLoginFormValidated, ValidationErrorResponse> {
-        let mut builder = ValidationErrorsBuilder::new();
+    pub fn as_validated(&self) -> Result<UserLoginFormValidated, UserLoginFormValidationError> {
+        let mut flag = false;
 
-        let username = builder
-            .add_item_from_trait(Username::parse_login(self.username.clone(), None))
-            .unwrap_or_default();
-        let password = builder
-            .add_item_from_trait(Password::parse_login(self.password.clone(), None))
-            .unwrap_or_default();
+        use error_flag as ef;
+        let username = ef(&mut flag, Username::parse_login(self.username.clone()));
+        let password = ef(&mut flag, Password::parse_login(self.password.clone()));
 
-        builder.build_result()?;
+        if flag {
+            return Err(UserLoginFormValidationError {
+                username,
+                password,
+                password_confirm: Ok(Password::default()),
+            });
+        }
 
-        Ok(UserLoginFormValidated { username, password })
+        Ok(UserLoginFormValidated {
+            username: username.unwrap_or_default(),
+            password: password.unwrap_or_default(),
+        })
     }
 }
