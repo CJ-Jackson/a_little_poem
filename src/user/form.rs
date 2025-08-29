@@ -61,6 +61,7 @@ impl UserRegisterFormResult {
         self,
         service: &T,
     ) -> UserRegisterFormResult {
+        let is_error = self.0.is_err();
         let current: UserLoginFormValidationError =
             unified(async { self.0.map(|v| v.into()) }).await;
         if current.username.is_err() {
@@ -78,7 +79,7 @@ impl UserRegisterFormResult {
                 password: current.password,
                 password_confirm: current.password_confirm,
             }));
-        } else if current_clone.has_error() {
+        } else if is_error {
             return Self(Err(current_clone));
         }
         Self(Ok(current_clone.into()))

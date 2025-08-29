@@ -47,12 +47,6 @@ pub struct UserLoginFormValidationError {
     pub password_confirm: Result<Password, PasswordError>,
 }
 
-impl UserLoginFormValidationError {
-    pub fn has_error(&self) -> bool {
-        self.username.is_err() || self.password.is_err() || self.password_confirm.is_err()
-    }
-}
-
 impl Default for UserLoginFormValidationError {
     fn default() -> Self {
         Self {
