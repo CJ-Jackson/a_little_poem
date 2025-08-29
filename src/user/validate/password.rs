@@ -16,6 +16,12 @@ impl ValidationCheck for PasswordError {
     }
 }
 
+impl Clone for PasswordError {
+    fn clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
+    }
+}
+
 #[derive(Default, Clone)]
 pub struct Password(String);
 

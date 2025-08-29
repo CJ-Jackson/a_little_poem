@@ -16,8 +16,18 @@ impl ValidationCheck for UsernameError {
     }
 }
 
-#[derive(Default)]
+impl Clone for UsernameError {
+    fn clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
+    }
+}
+
+#[derive(Default, Clone)]
 pub struct Username(String);
+
+pub trait IsUsernameTaken {
+    fn is_username_taken(&self, username: &str) -> impl Future<Output = bool>;
+}
 
 impl Username {
     pub fn parse(username: String) -> Result<Self, UsernameError> {
@@ -51,39 +61,22 @@ impl Username {
         Ok(Self(username))
     }
 
+    pub async fn check_if_username_taken<T: IsUsernameTaken>(
+        &self,
+        service: &T,
+    ) -> Result<Self, UsernameError> {
+        let mut message: Vec<String> = vec![];
+
+        service.is_username_taken(self.as_str()).await.then(|| {
+            message.push("Already taken".to_string());
+        });
+
+        UsernameError::validation_check(message)?;
+        Ok(self.clone())
+    }
+
     pub fn as_str(&self) -> &str {
         &self.0
-    }
-}
-
-pub trait IsUsernameTaken {
-    fn is_username_taken(&self, username: &str) -> impl Future<Output = bool>;
-}
-
-trait Sealed {}
-
-#[allow(private_bounds)]
-pub trait UsernameCheckResult: Sealed {
-    fn check_username_result<T: IsUsernameTaken>(self, service: &T) -> impl Future<Output = Self>;
-}
-
-impl Sealed for Result<Username, UsernameError> {}
-
-impl UsernameCheckResult for Result<Username, UsernameError> {
-    async fn check_username_result<T: IsUsernameTaken>(self, service: &T) -> Self {
-        match self {
-            Ok(v) => {
-                let mut message: Vec<String> = vec![];
-
-                service.is_username_taken(v.as_str()).await.then(|| {
-                    message.push("Already taken".to_string());
-                });
-
-                UsernameError::validation_check(message)?;
-                Ok(v)
-            }
-            Err(_) => self,
-        }
     }
 }
 
@@ -126,11 +119,11 @@ mod tests {
 
     #[tokio::test]
     async fn username_is_taken() {
-        let username_result: Result<Username, UsernameError> = Ok(Username("taken".to_string()));
+        let username_result = Username("taken".to_string());
 
         assert!(
             username_result
-                .check_username_result(&FakeUsernameCheckService("taken".to_string()))
+                .check_if_username_taken(&FakeUsernameCheckService("taken".to_string()))
                 .await
                 .is_err()
         )
@@ -138,12 +131,11 @@ mod tests {
 
     #[tokio::test]
     async fn username_is_not_taken() {
-        let username_result: Result<Username, UsernameError> =
-            Ok(Username("not_taken".to_string()));
+        let username_result = Username("not_taken".to_string());
 
         assert!(
             username_result
-                .check_username_result(&FakeUsernameCheckService("taken".to_string()))
+                .check_if_username_taken(&FakeUsernameCheckService("taken".to_string()))
                 .await
                 .is_ok()
         )

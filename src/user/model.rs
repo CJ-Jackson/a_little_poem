@@ -25,15 +25,42 @@ pub struct UserRegisterFormValidated {
     pub password_confirm: Password,
 }
 
+impl Into<UserLoginFormValidationError> for UserRegisterFormValidated {
+    fn into(self) -> UserLoginFormValidationError {
+        UserLoginFormValidationError {
+            username: Ok(self.username),
+            password: Ok(self.password),
+            password_confirm: Ok(self.password_confirm),
+        }
+    }
+}
+
 pub struct UserLoginFormValidated {
     pub username: Username,
     pub password: Password,
 }
 
+#[derive(Clone)]
 pub struct UserLoginFormValidationError {
     pub username: Result<Username, UsernameError>,
     pub password: Result<Password, PasswordError>,
     pub password_confirm: Result<Password, PasswordError>,
+}
+
+impl UserLoginFormValidationError {
+    pub fn has_error(&self) -> bool {
+        self.username.is_err() || self.password.is_err() || self.password_confirm.is_err()
+    }
+}
+
+impl Default for UserLoginFormValidationError {
+    fn default() -> Self {
+        Self {
+            username: Ok(Username::default()),
+            password: Ok(Password::default()),
+            password_confirm: Ok(Password::default()),
+        }
+    }
 }
 
 impl Into<UserLoginFormValidationErrorMessage> for UserLoginFormValidationError {
@@ -42,6 +69,16 @@ impl Into<UserLoginFormValidationErrorMessage> for UserLoginFormValidationError 
             username: self.username.err().map(|e| e.0).unwrap_or_default(),
             password: self.password.err().map(|e| e.0).unwrap_or_default(),
             password_confirm: self.password_confirm.err().map(|e| e.0).unwrap_or_default(),
+        }
+    }
+}
+
+impl Into<UserRegisterFormValidated> for UserLoginFormValidationError {
+    fn into(self) -> UserRegisterFormValidated {
+        UserRegisterFormValidated {
+            username: self.username.unwrap_or_default(),
+            password: self.password.unwrap_or_default(),
+            password_confirm: self.password_confirm.unwrap_or_default(),
         }
     }
 }

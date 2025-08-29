@@ -180,8 +180,11 @@ async fn register_post(
         csrf_verifier
             .verify(data.csrf_token.as_str())
             .map_err(|err| RegisterPostResponse::Csrf(err))?;
-        let validated_data = data.as_validated(&user_register_service).await;
-        match validated_data {
+        let validated_data = data
+            .as_validated()
+            .check_username_taken(&user_register_service)
+            .await;
+        match validated_data.0 {
             Ok(data) => {
                 if user_register_service.register_user(
                     data.username.as_str().to_string(),
@@ -205,7 +208,7 @@ async fn register_post(
             Err(err) => Err(RegisterPostResponse::Markup(UserRegisterForm::html_form(
                 "Register".to_string(),
                 &context_html_builder,
-                Some(data.clone()),
+                Some(data),
                 Some(err.into()),
                 Some(csrf_token.as_html()),
             ))),

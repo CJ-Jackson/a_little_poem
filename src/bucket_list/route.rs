@@ -1,5 +1,5 @@
 use crate::bucket_list::model::{
-    AddToBucketList, AddToBucketListValidationErrorResponse, BucketListItem,
+    AddToBucketList, AddToBucketListResult, AddToBucketListValidationErrorResponse, BucketListItem,
 };
 use crate::bucket_list::repository::{BucketListRepository, BucketListRepositoryError};
 use crate::common::adapter::{ReportAdapter, ResultAdapter};
@@ -109,9 +109,8 @@ async fn add_bucket_list(
     _csrf_header_checker: CsrfHeaderChecker,
 ) -> ResultAdapter<WithStatus<Json<Value>>, AddBucketListRouteError> {
     ResultAdapter::execute(async {
-        let data = data
-            .to_validated()
-            .map_err(|e| AddBucketListRouteError::Validate(Json(e.into())))?;
+        let AddToBucketListResult(data) = (&data).into();
+        let data = data.map_err(|e| AddBucketListRouteError::Validate(Json(e.into())))?;
 
         repo.add_to_bucket_list(&data)
             .map_err(|e| AddBucketListRouteError::Repo(ErrorReportResponse::new(e)))?;

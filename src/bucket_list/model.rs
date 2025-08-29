@@ -19,22 +19,28 @@ pub struct AddToBucketList {
     pub description: String,
 }
 
-impl AddToBucketList {
-    pub fn to_validated(&self) -> Result<AddToBucketListValidated, AddToBucketListValidationError> {
-        let mut flag = false;
+pub struct AddToBucketListResult(
+    pub Result<AddToBucketListValidated, AddToBucketListValidationError>,
+);
 
-        use error_flag as ef;
-        let name = ef(&mut flag, Name::parse(self.name.clone()));
-        let description = ef(&mut flag, Description::parse(self.description.clone()));
+impl Into<AddToBucketListResult> for &AddToBucketList {
+    fn into(self) -> AddToBucketListResult {
+        AddToBucketListResult((|| {
+            let mut flag = false;
 
-        if flag {
-            return Err(AddToBucketListValidationError { name, description });
-        }
+            use error_flag as ef;
+            let name = ef(&mut flag, Name::parse(self.name.clone()));
+            let description = ef(&mut flag, Description::parse(self.description.clone()));
 
-        Ok(AddToBucketListValidated {
-            name: name.unwrap_or_default(),
-            description: description.unwrap_or_default(),
-        })
+            if flag {
+                return Err(AddToBucketListValidationError { name, description });
+            }
+
+            Ok(AddToBucketListValidated {
+                name: name.unwrap_or_default(),
+                description: description.unwrap_or_default(),
+            })
+        })())
     }
 }
 
