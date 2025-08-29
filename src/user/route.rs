@@ -11,6 +11,7 @@ use chrono::TimeDelta;
 use error_stack::Report;
 use maud::{Markup, html};
 use poem::error::ResponseError;
+use poem::http::StatusCode;
 use poem::session::Session;
 use poem::web::cookie::{Cookie, CookieJar};
 use poem::web::{CsrfToken, CsrfVerifier, Form, Redirect};
@@ -153,7 +154,7 @@ async fn register(
 
 enum RegisterPostResponse {
     Redirect(Redirect),
-    Markup(Markup),
+    MarkupValidationError(Markup),
     Csrf(Report<CsrfError>),
 }
 
@@ -161,7 +162,9 @@ impl IntoResponse for RegisterPostResponse {
     fn into_response(self) -> poem::Response {
         match self {
             RegisterPostResponse::Redirect(redirect) => redirect.into_response(),
-            RegisterPostResponse::Markup(markup) => markup.into_response(),
+            RegisterPostResponse::MarkupValidationError(markup) => markup
+                .with_status(StatusCode::UNPROCESSABLE_ENTITY)
+                .into_response(),
             RegisterPostResponse::Csrf(csrf) => csrf.current_context().as_response(),
         }
     }
@@ -205,13 +208,15 @@ async fn register_post(
                     )))
                 }
             }
-            Err(err) => Err(RegisterPostResponse::Markup(UserRegisterForm::html_form(
-                "Register".to_string(),
-                &context_html_builder,
-                Some(data),
-                Some(err.into()),
-                Some(csrf_token.as_html()),
-            ))),
+            Err(err) => Err(RegisterPostResponse::MarkupValidationError(
+                UserRegisterForm::html_form(
+                    "Register".to_string(),
+                    &context_html_builder,
+                    Some(data),
+                    Some(err.into()),
+                    Some(csrf_token.as_html()),
+                ),
+            )),
         }
     })
     .await
