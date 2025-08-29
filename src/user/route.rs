@@ -76,8 +76,8 @@ enum LoginPostResponse {
 impl IntoResponse for LoginPostResponse {
     fn into_response(self) -> poem::Response {
         match self {
-            LoginPostResponse::Redirect(redirect) => redirect.into_response(),
-            LoginPostResponse::Csrf(csrf) => csrf.current_context().as_response(),
+            Self::Redirect(redirect) => redirect.into_response(),
+            Self::Csrf(csrf) => csrf.current_context().as_response(),
         }
     }
 }
@@ -161,11 +161,11 @@ enum RegisterPostResponse {
 impl IntoResponse for RegisterPostResponse {
     fn into_response(self) -> poem::Response {
         match self {
-            RegisterPostResponse::Redirect(redirect) => redirect.into_response(),
-            RegisterPostResponse::MarkupValidationError(markup) => markup
+            Self::Redirect(redirect) => redirect.into_response(),
+            Self::MarkupValidationError(markup) => markup
                 .with_status(StatusCode::UNPROCESSABLE_ENTITY)
                 .into_response(),
-            RegisterPostResponse::Csrf(csrf) => csrf.current_context().as_response(),
+            Self::Csrf(csrf) => csrf.current_context().as_response(),
         }
     }
 }
