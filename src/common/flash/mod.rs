@@ -13,21 +13,21 @@ pub enum Flash {
 impl Flash {
     pub fn as_html(&self) -> Markup {
         match self {
-            Flash::Success { msg } => {
+            Self::Success { msg } => {
                 html! {
                    div .flash-message .flash-message-success {
                        (msg)
                    }
                 }
             }
-            Flash::Error { msg } => {
+            Self::Error { msg } => {
                 html! {
                    div .flash-message .flash-message-error {
                        (msg)
                    }
                 }
             }
-            Flash::Warning { msg } => {
+            Self::Warning { msg } => {
                 html! {
                    div .flash-message .flash-message-warning {
                        (msg)
