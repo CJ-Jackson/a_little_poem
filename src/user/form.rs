@@ -119,32 +119,42 @@ impl UserRegisterForm {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct UserLoginForm {
     pub username: String,
     pub password: String,
     pub csrf_token: String,
 }
 
+pub struct UserLoginFormResult(pub Result<UserLoginFormValidated, UserLoginFormValidationError>);
+
+impl Into<UserLoginFormResult> for UserLoginForm {
+    fn into(self) -> UserLoginFormResult {
+        UserLoginFormResult((|| {
+            let mut flag = false;
+
+            use error_flag as ef;
+            let username = ef(&mut flag, Username::parse_login(self.username.clone()));
+            let password = ef(&mut flag, Password::parse_login(self.password.clone()));
+
+            if flag {
+                return Err(UserLoginFormValidationError {
+                    username,
+                    password,
+                    password_confirm: Ok(Password::default()),
+                });
+            }
+
+            Ok(UserLoginFormValidated {
+                username: username.unwrap_or_default(),
+                password: password.unwrap_or_default(),
+            })
+        })())
+    }
+}
+
 impl UserLoginForm {
-    pub fn as_validated(&self) -> Result<UserLoginFormValidated, UserLoginFormValidationError> {
-        let mut flag = false;
-
-        use error_flag as ef;
-        let username = ef(&mut flag, Username::parse_login(self.username.clone()));
-        let password = ef(&mut flag, Password::parse_login(self.password.clone()));
-
-        if flag {
-            return Err(UserLoginFormValidationError {
-                username,
-                password,
-                password_confirm: Ok(Password::default()),
-            });
-        }
-
-        Ok(UserLoginFormValidated {
-            username: username.unwrap_or_default(),
-            password: password.unwrap_or_default(),
-        })
+    pub fn as_validated(&self) -> UserLoginFormResult {
+        self.clone().into()
     }
 }

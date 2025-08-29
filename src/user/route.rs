@@ -5,7 +5,7 @@ use crate::common::csrf::{CsrfError, CsrfTokenHtml, CsrfVerifierError};
 use crate::common::flash::{Flash, FlashMessage};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::user::flag::{LoginFlag, LogoutFlag};
-use crate::user::form::{UserLoginForm, UserRegisterForm};
+use crate::user::form::{UserLoginForm, UserLoginFormResult, UserRegisterForm};
 use crate::user::service::{UserLoginService, UserRegisterService};
 use chrono::TimeDelta;
 use error_stack::Report;
@@ -93,7 +93,7 @@ async fn login_post(
         csrf_verifier
             .verify(data.csrf_token.as_str())
             .map_err(|err| LoginPostResponse::Csrf(err))?;
-        if let Ok(data) = data.as_validated() {
+        if let UserLoginFormResult(Ok(data)) = data.as_validated() {
             let token = user_login.validate_login(
                 data.username.as_str().to_string(),
                 data.password.as_str().to_string(),
