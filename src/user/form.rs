@@ -16,6 +16,7 @@ pub struct UserRegisterForm {
     pub password_confirm: String,
     pub csrf_token: String,
 }
+
 impl Into<UserRegisterFormResult> for UserRegisterForm {
     fn into(self) -> UserRegisterFormResult {
         UserRegisterFormResult((|| {
