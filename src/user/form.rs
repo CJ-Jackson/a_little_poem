@@ -1,4 +1,3 @@
-use crate::common::adapter::unified;
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::validation::{arc_string_to_html, error_flag};
 use crate::user::model::{
@@ -57,13 +56,15 @@ pub struct UserRegisterFormResult(
 );
 
 impl UserRegisterFormResult {
+    fn into_error(self) -> UserLoginFormValidationError {
+        self.0.map(|v| v.into()).unwrap_or_else(|e| e)
+    }
     pub async fn check_username_taken<T: IsUsernameTaken>(
         self,
         service: &T,
     ) -> UserRegisterFormResult {
         let is_error = self.0.is_err();
-        let current: UserLoginFormValidationError =
-            unified(async { self.0.map(|v| v.into()) }).await;
+        let current = self.into_error();
         if current.username.is_err() {
             return Self(Err(current));
         }
