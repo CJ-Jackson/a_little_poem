@@ -59,6 +59,7 @@ impl UserRegisterFormResult {
     fn into_error(self) -> UserLoginFormValidationError {
         self.0.map(|v| v.into()).unwrap_or_else(|e| e)
     }
+
     pub async fn check_username_taken<T: IsUsernameTaken>(
         self,
         service: &T,
