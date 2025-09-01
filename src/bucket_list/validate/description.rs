@@ -87,32 +87,3 @@ impl Description {
         self.0.as_str()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_description() {
-        let description = Description::parse("Hello".to_string());
-        assert!(description.is_ok());
-    }
-
-    #[test]
-    fn test_parse_description_error_empty_description() {
-        let description = Description::parse("".to_string());
-        assert!(description.is_err());
-    }
-
-    #[test]
-    fn test_parse_description_error_description_length_too_short() {
-        let description = Description::parse("a".to_string());
-        assert!(description.is_err());
-    }
-
-    #[test]
-    fn test_parse_description_error_description_length_too_long() {
-        let description = Description::parse("a".repeat(101));
-        assert!(description.is_err());
-    }
-}

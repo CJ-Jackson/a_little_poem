@@ -140,55 +140,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_password_parse() {
-        let password = Password::parse("Hello@Wor1d".to_string());
-        assert!(password.is_ok());
-    }
-
-    #[test]
-    fn test_password_parse_error_empty_string() {
-        let password = Password::parse("".to_string());
-        assert!(password.is_err());
-    }
-
-    #[test]
-    fn test_password_parse_error_too_short() {
-        let password = Password::parse("a".to_string());
-        assert!(password.is_err());
-    }
-
-    #[test]
-    fn test_password_parse_error_too_long() {
-        let password_str = "a".repeat(65);
-        let password = Password::parse(password_str);
-        assert!(password.is_err());
-    }
-
-    #[test]
-    fn test_password_parse_error_lower_case_only() {
-        let password = Password::parse("hello@wor1d".to_string());
-        assert!(password.is_err());
-    }
-
-    #[test]
-    fn test_password_parse_error_upper_case_only() {
-        let password = Password::parse("HELLO@WOR1D".to_string());
-        assert!(password.is_err());
-    }
-
-    #[test]
-    fn test_password_parse_error_special_char_only() {
-        let password = Password::parse("!@#$%^&*()".to_string());
-        assert!(password.is_err());
-    }
-
-    #[test]
-    fn test_password_parse_error_digit_only() {
-        let password = Password::parse("1234567890".to_string());
-        assert!(password.is_err());
-    }
-
-    #[test]
     fn test_password_parse_error_password_confirmation_mismatch() {
         let password = Password("match".to_string());
         let password = password.parse_confirm("mismatch".to_string());

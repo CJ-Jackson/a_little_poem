@@ -127,31 +127,6 @@ impl Username {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_username_parse() {
-        let username = Username::parse("Hello".to_string());
-        assert!(username.is_ok());
-    }
-
-    #[test]
-    fn test_username_parse_error_empty_string() {
-        let username = Username::parse("".to_string());
-        assert!(username.is_err());
-    }
-
-    #[test]
-    fn test_username_parse_error_too_short() {
-        let username = Username::parse("a".to_string());
-        assert!(username.is_err());
-    }
-
-    #[test]
-    fn test_username_parse_error_too_long() {
-        let username_str = "a".repeat(31);
-        let username = Username::parse(username_str);
-        assert!(username.is_err());
-    }
-
     struct FakeUsernameCheckService(String);
 
     impl IsUsernameTaken for FakeUsernameCheckService {

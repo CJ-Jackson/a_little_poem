@@ -84,32 +84,3 @@ impl Name {
         self.0.as_str()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_parse_name() {
-        let name = Name::parse("Hello".to_string());
-        assert!(name.is_ok());
-    }
-
-    #[test]
-    fn test_parse_name_error_empty_name() {
-        let name = Name::parse("".to_string());
-        assert!(name.is_err());
-    }
-
-    #[test]
-    fn test_parse_name_error_name_length_too_short() {
-        let name = Name::parse("a".to_string());
-        assert!(name.is_err());
-    }
-
-    #[test]
-    fn test_parse_name_error_name_length_too_long() {
-        let name = Name::parse("a".repeat(21));
-        assert!(name.is_err());
-    }
-}

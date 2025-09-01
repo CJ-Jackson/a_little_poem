@@ -72,3 +72,151 @@ impl StringSpecialCharRule {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod string_mandatory_rule {
+        use super::*;
+        use crate::common::validation::StrValidationExtension;
+
+        #[test]
+        fn test_string_mandatory_rule_check_empty_string() {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "".as_string_validator();
+            let rule = StringMandatoryRule { is_mandatory: true };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 1);
+            assert_eq!(msgs[0], "Cannot be empty");
+        }
+
+        #[test]
+        fn test_string_mandatory_rule_check_not_empty_string() {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "Hello".as_string_validator();
+            let rule = StringMandatoryRule { is_mandatory: true };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 0);
+        }
+    }
+
+    mod string_length_rule {
+        use super::*;
+        use crate::common::validation::StrValidationExtension;
+
+        #[test]
+        fn test_string_length_rule_check_empty_string() {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "".as_string_validator();
+            let rule = StringLengthRule {
+                min_length: Some(5),
+                max_length: Some(10),
+            };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 1);
+            assert_eq!(msgs[0], "Must be at least 5 characters");
+        }
+
+        #[test]
+        fn test_string_length_rule_check_too_long_string() {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "Hello".as_string_validator();
+            let rule = StringLengthRule {
+                min_length: Some(2),
+                max_length: Some(4),
+            };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 1);
+            assert_eq!(msgs[0], "Must be at most 4 characters");
+        }
+    }
+
+    mod string_special_char_rule {
+        use super::*;
+        use crate::common::validation::StrValidationExtension;
+
+        #[test]
+        fn test_string_special_char_rule_check_empty_string() {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "".as_string_validator();
+            let rule = StringSpecialCharRule {
+                must_have_uppercase: true,
+                must_have_lowercase: true,
+                must_have_special_chars: true,
+                must_have_digit: true,
+            };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 3);
+            assert_eq!(msgs[0], "Must contain at least one special character");
+            assert_eq!(
+                msgs[1],
+                "Must contain at least one uppercase and lowercase letter"
+            );
+            assert_eq!(msgs[2], "Must contain at least one digit");
+        }
+
+        #[test]
+        fn test_string_special_char_rule_check_not_empty_string() {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "Hello".as_string_validator();
+            let rule = StringSpecialCharRule {
+                must_have_uppercase: true,
+                must_have_lowercase: true,
+                must_have_special_chars: true,
+                must_have_digit: true,
+            };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 2);
+            assert_eq!(msgs[0], "Must contain at least one special character");
+            assert_eq!(msgs[1], "Must contain at least one digit");
+        }
+
+        #[test]
+        fn test_string_special_char_rule_check_not_empty_string_with_uppercase_and_lowercase_and_symbol()
+         {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "Hello@".as_string_validator();
+            let rule = StringSpecialCharRule {
+                must_have_uppercase: true,
+                must_have_lowercase: true,
+                must_have_special_chars: true,
+                must_have_digit: true,
+            };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 1);
+            assert_eq!(msgs[0], "Must contain at least one digit");
+        }
+
+        #[test]
+        fn test_string_special_char_rule_check_not_empty_string_with_uppercase_and_lowercase_and_digit()
+         {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "Hello1".as_string_validator();
+            let rule = StringSpecialCharRule {
+                must_have_uppercase: true,
+                must_have_lowercase: true,
+                must_have_special_chars: true,
+                must_have_digit: true,
+            };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 1);
+            assert_eq!(msgs[0], "Must contain at least one special character");
+        }
+
+        #[test]
+        fn test_string_special_char_rule_check_not_empty_string_with_uppercase_and_lowercase_digit_and_symbol()
+         {
+            let mut msgs: Vec<String> = vec![];
+            let subject = "Hello1@".as_string_validator();
+            let rule = StringSpecialCharRule {
+                must_have_uppercase: true,
+                must_have_lowercase: true,
+                must_have_special_chars: true,
+                must_have_digit: true,
+            };
+            rule.check(&mut msgs, &subject);
+            assert_eq!(msgs.len(), 0);
+        }
+    }
+}
