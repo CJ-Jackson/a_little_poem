@@ -1,3 +1,5 @@
+pub mod string_rules;
+
 use maud::{Markup, html};
 use std::sync::Arc;
 use unicode_segmentation::UnicodeSegmentation;

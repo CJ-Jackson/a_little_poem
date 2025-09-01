@@ -1,6 +1,77 @@
-use crate::common::validation::{StrValidationExtension, ValidationCheck};
+use crate::common::validation::string_rules::{
+    StringLengthRule, StringMandatoryRule, StringSpecialCharRule,
+};
+use crate::common::validation::{StrValidationExtension, StringValidator, ValidationCheck};
 use std::sync::Arc;
 use thiserror::Error;
+
+pub struct PasswordRule {
+    pub is_mandatory: bool,
+    pub must_have_uppercase: bool,
+    pub must_have_lowercase: bool,
+    pub must_have_special_chars: bool,
+    pub must_have_digit: bool,
+    pub min_length: Option<usize>,
+    pub max_length: Option<usize>,
+}
+
+impl Default for PasswordRule {
+    fn default() -> Self {
+        Self {
+            is_mandatory: true,
+            must_have_uppercase: true,
+            must_have_lowercase: true,
+            must_have_special_chars: true,
+            must_have_digit: true,
+            min_length: Some(8),
+            max_length: Some(64),
+        }
+    }
+}
+
+impl Into<StringMandatoryRule> for &PasswordRule {
+    fn into(self) -> StringMandatoryRule {
+        StringMandatoryRule {
+            is_mandatory: self.is_mandatory,
+        }
+    }
+}
+
+impl Into<StringLengthRule> for &PasswordRule {
+    fn into(self) -> StringLengthRule {
+        StringLengthRule {
+            min_length: self.min_length,
+            max_length: self.max_length,
+        }
+    }
+}
+
+impl Into<StringSpecialCharRule> for &PasswordRule {
+    fn into(self) -> StringSpecialCharRule {
+        StringSpecialCharRule {
+            must_have_uppercase: self.must_have_uppercase,
+            must_have_lowercase: self.must_have_lowercase,
+            must_have_special_chars: self.must_have_special_chars,
+            must_have_digit: self.must_have_digit,
+        }
+    }
+}
+
+impl PasswordRule {
+    fn rules(&self) -> (StringMandatoryRule, StringLengthRule, StringSpecialCharRule) {
+        (self.into(), self.into(), self.into())
+    }
+
+    fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {
+        let (mandatory, length, special_char) = self.rules();
+        mandatory.check(msgs, subject);
+        if !msgs.is_empty() {
+            return;
+        }
+        length.check(msgs, subject);
+        special_char.check(msgs, subject);
+    }
+}
 
 #[derive(Debug, Error)]
 #[error("Password is invalid")]
@@ -26,48 +97,36 @@ impl Clone for PasswordError {
 pub struct Password(String);
 
 impl Password {
-    pub fn parse(password: String) -> Result<Self, PasswordError> {
+    pub fn parse_custom(
+        password: String,
+        password_rule: PasswordRule,
+    ) -> Result<Self, PasswordError> {
         let mut message: Vec<String> = vec![];
         let password_validator = password.as_string_validator();
 
-        let mut check_count_and_chars = true;
-        password_validator.is_empty().then(|| {
-            message.push("Cannot be empty".to_string());
-            check_count_and_chars = false;
-        });
-        check_count_and_chars.then(|| {
-            (password_validator.count_graphemes() < 8).then(|| {
-                message.push("Must be at least 8 characters".to_string());
-            });
-            (password_validator.count_graphemes() > 64).then(|| {
-                message.push("Must be at most 64 characters".to_string());
-            });
-            (!password_validator.has_ascii_uppercase_and_lowercase()).then(|| {
-                message
-                    .push("Must contain at least one uppercase and lowercase letter".to_string());
-            });
-            (!password_validator.has_special_chars()).then(|| {
-                message.push("Must contain at least one special character".to_string());
-            });
-            (!password_validator.has_ascii_digit()).then(|| {
-                message.push("Must contain at least one digit".to_string());
-            })
-        });
+        password_rule.check(&mut message, &password_validator);
 
         PasswordError::validation_check(message)?;
         Ok(Self(password))
     }
 
+    pub fn parse(password: String) -> Result<Self, PasswordError> {
+        Self::parse_custom(password, PasswordRule::default())
+    }
+
     pub fn parse_login(password: String) -> Result<Self, PasswordError> {
-        let mut message: Vec<String> = vec![];
-        let password_validator = password.as_string_validator();
-
-        (password_validator.count_graphemes() > 64).then(|| {
-            message.push("Must be at most 64 characters".to_string());
-        });
-
-        PasswordError::validation_check(message)?;
-        Ok(Self(password))
+        Self::parse_custom(
+            password,
+            PasswordRule {
+                is_mandatory: false,
+                must_have_uppercase: false,
+                must_have_lowercase: false,
+                must_have_special_chars: false,
+                must_have_digit: false,
+                min_length: None,
+                max_length: Some(64),
+            },
+        )
     }
 
     pub fn parse_confirm(&self, password_confirm: String) -> Result<Self, PasswordError> {
