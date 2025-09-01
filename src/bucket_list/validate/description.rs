@@ -1,6 +1,55 @@
-use crate::common::validation::{StrValidationExtension, ValidationCheck};
+use crate::common::validation::string_rules::{StringLengthRule, StringMandatoryRule};
+use crate::common::validation::{StrValidationExtension, StringValidator, ValidationCheck};
 use std::sync::Arc;
 use thiserror::Error;
+
+pub struct DescriptionRule {
+    pub is_mandatory: bool,
+    pub min_length: Option<usize>,
+    pub max_length: Option<usize>,
+}
+
+impl Default for DescriptionRule {
+    fn default() -> Self {
+        Self {
+            is_mandatory: true,
+            min_length: Some(5),
+            max_length: Some(100),
+        }
+    }
+}
+
+impl Into<StringMandatoryRule> for &DescriptionRule {
+    fn into(self) -> StringMandatoryRule {
+        StringMandatoryRule {
+            is_mandatory: self.is_mandatory,
+        }
+    }
+}
+
+impl Into<StringLengthRule> for &DescriptionRule {
+    fn into(self) -> StringLengthRule {
+        StringLengthRule {
+            min_length: self.min_length,
+            max_length: self.max_length,
+        }
+    }
+}
+
+impl DescriptionRule {
+    fn rules(&self) -> (StringMandatoryRule, StringLengthRule) {
+        (self.into(), self.into())
+    }
+
+    fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {
+        let (mandatory, length) = self.rules();
+        mandatory.check(msgs, subject);
+        if !msgs.is_empty() {
+            return;
+        }
+        length.check(msgs, subject);
+    }
+}
 
 #[derive(Debug, Error)]
 #[error("Description Error")]
@@ -20,24 +69,21 @@ impl ValidationCheck for DescriptionError {
 pub struct Description(String);
 
 impl Description {
-    pub fn parse(description: String) -> Result<Self, DescriptionError> {
+    pub fn parse_custom(
+        description: String,
+        description_rule: DescriptionRule,
+    ) -> Result<Self, DescriptionError> {
         let mut message: Vec<String> = vec![];
         let description_validator = description.as_string_validator();
 
-        let mut check_count = true;
-        description_validator.is_empty().then(|| {
-            message.push("Required".to_string());
-            check_count = false;
-        });
-        check_count.then(|| {
-            (description_validator.count_graphemes() < 5)
-                .then(|| message.push("Must be at least 5 characters".to_string()));
-            (description_validator.count_graphemes() > 100)
-                .then(|| message.push("Must be at most 100 characters".to_string()));
-        });
+        description_rule.check(&mut message, &description_validator);
 
         DescriptionError::validation_check(message)?;
         Ok(Description(description))
+    }
+
+    pub fn parse(description: String) -> Result<Self, DescriptionError> {
+        Self::parse_custom(description, DescriptionRule::default())
     }
 
     pub fn as_str(&self) -> &str {
