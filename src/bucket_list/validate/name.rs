@@ -19,26 +19,23 @@ impl Default for NameRule {
     }
 }
 
-impl Into<StringMandatoryRule> for &NameRule {
-    fn into(self) -> StringMandatoryRule {
-        StringMandatoryRule {
-            is_mandatory: self.is_mandatory,
-        }
-    }
-}
-
-impl Into<StringLengthRule> for &NameRule {
-    fn into(self) -> StringLengthRule {
-        StringLengthRule {
-            min_length: self.min_length,
-            max_length: self.max_length,
-        }
+impl Into<(StringMandatoryRule, StringLengthRule)> for &NameRule {
+    fn into(self) -> (StringMandatoryRule, StringLengthRule) {
+        (
+            StringMandatoryRule {
+                is_mandatory: self.is_mandatory,
+            },
+            StringLengthRule {
+                min_length: self.min_length,
+                max_length: self.max_length,
+            },
+        )
     }
 }
 
 impl NameRule {
     fn rules(&self) -> (StringMandatoryRule, StringLengthRule) {
-        (self.into(), self.into())
+        self.into()
     }
 
     fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {

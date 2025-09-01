@@ -29,37 +29,29 @@ impl Default for PasswordRule {
     }
 }
 
-impl Into<StringMandatoryRule> for &PasswordRule {
-    fn into(self) -> StringMandatoryRule {
-        StringMandatoryRule {
-            is_mandatory: self.is_mandatory,
-        }
-    }
-}
-
-impl Into<StringLengthRule> for &PasswordRule {
-    fn into(self) -> StringLengthRule {
-        StringLengthRule {
-            min_length: self.min_length,
-            max_length: self.max_length,
-        }
-    }
-}
-
-impl Into<StringSpecialCharRule> for &PasswordRule {
-    fn into(self) -> StringSpecialCharRule {
-        StringSpecialCharRule {
-            must_have_uppercase: self.must_have_uppercase,
-            must_have_lowercase: self.must_have_lowercase,
-            must_have_special_chars: self.must_have_special_chars,
-            must_have_digit: self.must_have_digit,
-        }
+impl Into<(StringMandatoryRule, StringLengthRule, StringSpecialCharRule)> for &PasswordRule {
+    fn into(self) -> (StringMandatoryRule, StringLengthRule, StringSpecialCharRule) {
+        (
+            StringMandatoryRule {
+                is_mandatory: self.is_mandatory,
+            },
+            StringLengthRule {
+                min_length: self.min_length,
+                max_length: self.max_length,
+            },
+            StringSpecialCharRule {
+                must_have_uppercase: self.must_have_uppercase,
+                must_have_lowercase: self.must_have_lowercase,
+                must_have_special_chars: self.must_have_special_chars,
+                must_have_digit: self.must_have_digit,
+            },
+        )
     }
 }
 
 impl PasswordRule {
     fn rules(&self) -> (StringMandatoryRule, StringLengthRule, StringSpecialCharRule) {
-        (self.into(), self.into(), self.into())
+        self.into()
     }
 
     fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {
