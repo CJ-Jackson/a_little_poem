@@ -1,8 +1,10 @@
 use crate::common::validation::string_rules::{
     StringLengthRule, StringMandatoryRule, StringSpecialCharRule,
 };
+use crate::common::validation::validate_locale::{
+    LocaleMessage, ValidateErrorCollector, ValidateErrorStore,
+};
 use crate::common::validation::{StrValidationExtension, StringValidator, ValidationCheck};
-use std::sync::Arc;
 use thiserror::Error;
 
 pub struct PasswordRule {
@@ -54,7 +56,7 @@ impl PasswordRule {
         self.into()
     }
 
-    fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {
+    fn check(&self, msgs: &mut ValidateErrorCollector, subject: &StringValidator) {
         let (mandatory, length, special_char) = self.rules();
         mandatory.check(msgs, subject);
         if !msgs.is_empty() {
@@ -65,12 +67,12 @@ impl PasswordRule {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 #[error("Password is invalid")]
-pub struct PasswordError(pub Arc<[String]>);
+pub struct PasswordError(pub ValidateErrorStore);
 
 impl ValidationCheck for PasswordError {
-    fn validation_check(strings: Vec<String>) -> Result<(), Self> {
+    fn validation_check(strings: ValidateErrorCollector) -> Result<(), Self> {
         if strings.is_empty() {
             Ok(())
         } else {
@@ -79,21 +81,25 @@ impl ValidationCheck for PasswordError {
     }
 }
 
-impl Clone for PasswordError {
-    fn clone(&self) -> Self {
-        Self(Arc::clone(&self.0))
-    }
-}
-
 #[derive(Default, Clone)]
 pub struct Password(String);
+
+pub struct PasswordDoesNotMatchLocale;
+
+impl LocaleMessage for PasswordDoesNotMatchLocale {
+    fn get_locale_message(&self, locale: &poem::i18n::Locale, original: String) -> String {
+        locale
+            .text("validate-password-does-not-match")
+            .unwrap_or(original)
+    }
+}
 
 impl Password {
     pub fn parse_custom(
         password: String,
         password_rule: PasswordRule,
     ) -> Result<Self, PasswordError> {
-        let mut message: Vec<String> = vec![];
+        let mut message = ValidateErrorCollector::new();
         let password_validator = password.as_string_validator();
 
         password_rule.check(&mut message, &password_validator);
@@ -122,9 +128,14 @@ impl Password {
     }
 
     pub fn parse_confirm(&self, password_confirm: String) -> Result<Self, PasswordError> {
-        let mut message: Vec<String> = vec![];
+        let mut message = ValidateErrorCollector::new();
 
-        (password_confirm != self.as_str()).then(|| message.push("Does not match".to_string()));
+        (password_confirm != self.as_str()).then(|| {
+            message.push((
+                "Does not match".to_string(),
+                Box::new(PasswordDoesNotMatchLocale),
+            ))
+        });
 
         PasswordError::validation_check(message)?;
         Ok(Self(password_confirm))

@@ -1,6 +1,6 @@
 use crate::common::validation::string_rules::{StringLengthRule, StringMandatoryRule};
+use crate::common::validation::validate_locale::{ValidateErrorCollector, ValidateErrorStore};
 use crate::common::validation::{StrValidationExtension, StringValidator, ValidationCheck};
-use std::sync::Arc;
 use thiserror::Error;
 
 pub struct DescriptionRule {
@@ -38,7 +38,7 @@ impl DescriptionRule {
         self.into()
     }
 
-    fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {
+    fn check(&self, msgs: &mut ValidateErrorCollector, subject: &StringValidator) {
         let (mandatory, length) = self.rules();
         mandatory.check(msgs, subject);
         if !msgs.is_empty() {
@@ -50,10 +50,10 @@ impl DescriptionRule {
 
 #[derive(Debug, Error)]
 #[error("Description Error")]
-pub struct DescriptionError(pub Arc<[String]>);
+pub struct DescriptionError(pub ValidateErrorStore);
 
 impl ValidationCheck for DescriptionError {
-    fn validation_check(strings: Vec<String>) -> Result<(), Self> {
+    fn validation_check(strings: ValidateErrorCollector) -> Result<(), Self> {
         if strings.is_empty() {
             Ok(())
         } else {
@@ -70,7 +70,7 @@ impl Description {
         description: String,
         description_rule: DescriptionRule,
     ) -> Result<Self, DescriptionError> {
-        let mut message: Vec<String> = vec![];
+        let mut message = ValidateErrorCollector::new();
         let description_validator = description.as_string_validator();
 
         description_rule.check(&mut message, &description_validator);

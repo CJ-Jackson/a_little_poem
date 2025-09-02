@@ -1,6 +1,6 @@
 use crate::common::validation::string_rules::{StringLengthRule, StringMandatoryRule};
+use crate::common::validation::validate_locale::{ValidateErrorCollector, ValidateErrorStore};
 use crate::common::validation::{StrValidationExtension, StringValidator, ValidationCheck};
-use std::sync::Arc;
 use thiserror::Error;
 
 pub struct NameRule {
@@ -38,7 +38,7 @@ impl NameRule {
         self.into()
     }
 
-    fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {
+    fn check(&self, msgs: &mut ValidateErrorCollector, subject: &StringValidator) {
         let (mandatory, length) = self.rules();
         mandatory.check(msgs, subject);
         if !msgs.is_empty() {
@@ -50,10 +50,10 @@ impl NameRule {
 
 #[derive(Debug, Error)]
 #[error("Name Error")]
-pub struct NameError(pub Arc<[String]>);
+pub struct NameError(pub ValidateErrorStore);
 
 impl ValidationCheck for NameError {
-    fn validation_check(strings: Vec<String>) -> Result<(), Self> {
+    fn validation_check(strings: ValidateErrorCollector) -> Result<(), Self> {
         if strings.is_empty() {
             Ok(())
         } else {
@@ -67,7 +67,7 @@ pub struct Name(String);
 
 impl Name {
     pub fn parse_custom(name: String, name_rule: NameRule) -> Result<Self, NameError> {
-        let mut message: Vec<String> = vec![];
+        let mut message = ValidateErrorCollector::new();
         let name_validator = name.as_string_validator();
 
         name_rule.check(&mut message, &name_validator);

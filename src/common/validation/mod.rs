@@ -1,5 +1,7 @@
 pub mod string_rules;
+pub mod validate_locale;
 
+use crate::common::validation::validate_locale::ValidateErrorCollector;
 use maud::{Markup, html};
 use std::sync::Arc;
 use unicode_segmentation::UnicodeSegmentation;
@@ -99,7 +101,7 @@ impl StrValidationExtension for String {
 }
 
 pub trait ValidationCheck: Sized {
-    fn validation_check(strings: Vec<String>) -> Result<(), Self>;
+    fn validation_check(strings: ValidateErrorCollector) -> Result<(), Self>;
 }
 
 pub fn error_flag<T, E>(flag: &mut bool, res: Result<T, E>) -> Result<T, E> {

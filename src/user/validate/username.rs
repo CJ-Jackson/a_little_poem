@@ -1,6 +1,8 @@
 use crate::common::validation::string_rules::{StringLengthRule, StringMandatoryRule};
+use crate::common::validation::validate_locale::{
+    LocaleMessage, ValidateErrorCollector, ValidateErrorStore,
+};
 use crate::common::validation::{StrValidationExtension, StringValidator, ValidationCheck};
-use std::sync::Arc;
 use thiserror::Error;
 
 pub struct UsernameRule {
@@ -38,7 +40,7 @@ impl UsernameRule {
         self.into()
     }
 
-    fn check(&self, msgs: &mut Vec<String>, subject: &StringValidator) {
+    fn check(&self, msgs: &mut ValidateErrorCollector, subject: &StringValidator) {
         let (mandatory, length) = self.rules();
         mandatory.check(msgs, subject);
         if !msgs.is_empty() {
@@ -48,23 +50,17 @@ impl UsernameRule {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 #[error("Username is invalid")]
-pub struct UsernameError(pub Arc<[String]>);
+pub struct UsernameError(pub ValidateErrorStore);
 
 impl ValidationCheck for UsernameError {
-    fn validation_check(strings: Vec<String>) -> Result<(), Self> {
+    fn validation_check(strings: ValidateErrorCollector) -> Result<(), Self> {
         if strings.is_empty() {
             Ok(())
         } else {
             Err(Self(strings.into()))
         }
-    }
-}
-
-impl Clone for UsernameError {
-    fn clone(&self) -> Self {
-        Self(Arc::clone(&self.0))
     }
 }
 
@@ -75,12 +71,20 @@ pub trait IsUsernameTaken {
     fn is_username_taken(&self, username: &str) -> impl Future<Output = bool>;
 }
 
+pub struct UsernameTakenLocale;
+
+impl LocaleMessage for UsernameTakenLocale {
+    fn get_locale_message(&self, locale: &poem::i18n::Locale, original: String) -> String {
+        locale.text("validate-username-taken").unwrap_or(original)
+    }
+}
+
 impl Username {
     pub fn parse_custom(
         username: String,
         username_rule: UsernameRule,
     ) -> Result<Self, UsernameError> {
-        let mut message: Vec<String> = vec![];
+        let mut message = ValidateErrorCollector::new();
         let username_validator = username.as_string_validator();
 
         username_rule.check(&mut message, &username_validator);
@@ -108,10 +112,10 @@ impl Username {
         &self,
         service: &T,
     ) -> Result<Self, UsernameError> {
-        let mut message: Vec<String> = vec![];
+        let mut message = ValidateErrorCollector::new();
 
         service.is_username_taken(self.as_str()).await.then(|| {
-            message.push("Already taken".to_string());
+            message.push(("Already taken".to_string(), Box::new(UsernameTakenLocale)));
         });
 
         UsernameError::validation_check(message)?;

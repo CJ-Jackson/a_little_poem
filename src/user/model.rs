@@ -60,9 +60,21 @@ impl Default for UserLoginFormValidationError {
 impl Into<UserLoginFormValidationErrorMessage> for UserLoginFormValidationError {
     fn into(self) -> UserLoginFormValidationErrorMessage {
         UserLoginFormValidationErrorMessage {
-            username: self.username.err().map(|e| e.0).unwrap_or_default(),
-            password: self.password.err().map(|e| e.0).unwrap_or_default(),
-            password_confirm: self.password_confirm.err().map(|e| e.0).unwrap_or_default(),
+            username: self
+                .username
+                .err()
+                .map(|e| e.0.as_original_message())
+                .unwrap_or_default(),
+            password: self
+                .password
+                .err()
+                .map(|e| e.0.as_original_message())
+                .unwrap_or_default(),
+            password_confirm: self
+                .password_confirm
+                .err()
+                .map(|e| e.0.as_original_message())
+                .unwrap_or_default(),
         }
     }
 }

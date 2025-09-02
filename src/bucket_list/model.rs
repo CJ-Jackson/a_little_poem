@@ -57,8 +57,16 @@ pub struct AddToBucketListValidationError {
 impl Into<AddToBucketListValidationErrorResponse> for AddToBucketListValidationError {
     fn into(self) -> AddToBucketListValidationErrorResponse {
         AddToBucketListValidationErrorResponse {
-            name: self.name.err().map(|e| e.0).unwrap_or_default(),
-            description: self.description.err().map(|e| e.0).unwrap_or_default(),
+            name: self
+                .name
+                .err()
+                .map(|e| e.0.as_original_message())
+                .unwrap_or_default(),
+            description: self
+                .description
+                .err()
+                .map(|e| e.0.as_original_message())
+                .unwrap_or_default(),
         }
     }
 }
