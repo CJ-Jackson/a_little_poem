@@ -5,7 +5,7 @@ use poem::i18n::Locale;
 pub struct StringMandatoryLocale;
 
 impl LocaleMessage for StringMandatoryLocale {
-    fn get_locale_message(&self, locale: &poem::i18n::Locale, original: String) -> String {
+    fn get_locale_message(&self, locale: &Locale, original: String) -> String {
         locale.text("validate-cannot-be-empty").unwrap_or(original)
     }
 }
@@ -32,7 +32,7 @@ pub enum StringLengthLocale {
 }
 
 impl LocaleMessage for StringLengthLocale {
-    fn get_locale_message(&self, locale: &poem::i18n::Locale, original: String) -> String {
+    fn get_locale_message(&self, locale: &Locale, original: String) -> String {
         match self {
             Self::MinLength(min) => locale
                 .text_with_args("validate-min-length", (("min", min),))

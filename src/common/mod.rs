@@ -1,5 +1,5 @@
-use poem::handler;
 use crate::common::etag::{EtagCheck, EtagStamp};
+use poem::handler;
 
 pub mod adapter;
 pub mod cache_local;
@@ -13,6 +13,7 @@ pub mod etag;
 pub mod flash;
 pub mod html;
 pub mod icon;
+pub mod locale;
 pub mod password;
 pub mod validation;
 

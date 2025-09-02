@@ -2,6 +2,7 @@ use crate::bucket_list::validate::description::{Description, DescriptionError};
 use crate::bucket_list::validate::name::{Name, NameError};
 use crate::common::validation::error_flag;
 use chrono::{DateTime, Utc};
+use poem::i18n::Locale;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -66,6 +67,25 @@ impl Into<AddToBucketListValidationErrorResponse> for AddToBucketListValidationE
                 .description
                 .err()
                 .map(|e| e.0.as_original_message())
+                .unwrap_or_default(),
+        }
+    }
+}
+
+impl Into<AddToBucketListValidationErrorResponse> for (AddToBucketListValidationError, &Locale) {
+    fn into(self) -> AddToBucketListValidationErrorResponse {
+        AddToBucketListValidationErrorResponse {
+            name: self
+                .0
+                .name
+                .err()
+                .map(|e| e.0.as_locale_message(self.1))
+                .unwrap_or_default(),
+            description: self
+                .0
+                .description
+                .err()
+                .map(|e| e.0.as_locale_message(self.1))
                 .unwrap_or_default(),
         }
     }

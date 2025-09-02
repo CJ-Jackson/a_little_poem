@@ -1,5 +1,6 @@
 use crate::user::validate::password::{Password, PasswordError};
 use crate::user::validate::username::{Username, UsernameError};
+use poem::i18n::Locale;
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -74,6 +75,31 @@ impl Into<UserLoginFormValidationErrorMessage> for UserLoginFormValidationError 
                 .password_confirm
                 .err()
                 .map(|e| e.0.as_original_message())
+                .unwrap_or_default(),
+        }
+    }
+}
+
+impl Into<UserLoginFormValidationErrorMessage> for (UserLoginFormValidationError, &Locale) {
+    fn into(self) -> UserLoginFormValidationErrorMessage {
+        UserLoginFormValidationErrorMessage {
+            username: self
+                .0
+                .username
+                .err()
+                .map(|e| e.0.as_locale_message(self.1))
+                .unwrap_or_default(),
+            password: self
+                .0
+                .password
+                .err()
+                .map(|e| e.0.as_locale_message(self.1))
+                .unwrap_or_default(),
+            password_confirm: self
+                .0
+                .password_confirm
+                .err()
+                .map(|e| e.0.as_locale_message(self.1))
                 .unwrap_or_default(),
         }
     }

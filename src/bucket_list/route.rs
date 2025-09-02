@@ -11,6 +11,7 @@ use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use maud::{Markup, PreEscaped, html};
 use poem::http::StatusCode;
+use poem::i18n::Locale;
 use poem::web::{Json, WithStatus};
 use poem::{IntoResponse, Response, Route, get, handler, post};
 use serde_json::{Value, json};
@@ -107,10 +108,12 @@ async fn add_bucket_list(
     Dep(repo): Dep<BucketListRepository>,
     Json(data): Json<AddToBucketList>,
     _csrf_header_checker: CsrfHeaderChecker,
+    locale: Locale,
 ) -> ResultAdapter<WithStatus<Json<Value>>, AddBucketListRouteError> {
     ResultAdapter::execute(async {
         let AddToBucketListResult(data) = (&data).into();
-        let data = data.map_err(|e| AddBucketListRouteError::Validate(Json(e.into())))?;
+        let data =
+            data.map_err(|e| AddBucketListRouteError::Validate(Json((e, &locale).into())))?;
 
         repo.add_to_bucket_list(&data)
             .map_err(|e| AddBucketListRouteError::Repo(ErrorReportResponse::new(e)))?;
