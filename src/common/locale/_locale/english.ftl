@@ -1,8 +1,16 @@
 # Validation
 validate-cannot-be-empty = Cannot be empty
 
-validate-min-length = Must be at least { $min } characters
-validate-max-length = Must be at most { $max } characters
+validate-min-length =
+    Must be at least { $min ->
+        [one] 1 character
+        *[other] { $min } characters
+    }
+validate-max-length =
+    Must be at most { $max ->
+        [one] 1 character
+        *[other] { $max } characters
+    }
 
 validate-must-have-special-chars = Must contain at least one special character
 validate-must-have-uppercase-and-lowercase = Must contain at least one uppercase and lowercase letter
