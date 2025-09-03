@@ -12,7 +12,6 @@ use error_stack::Report;
 use maud::{Markup, html};
 use poem::error::ResponseError;
 use poem::http::StatusCode;
-use poem::i18n::Locale;
 use poem::session::Session;
 use poem::web::cookie::{Cookie, CookieJar};
 use poem::web::{CsrfToken, CsrfVerifier, Form, Redirect};
@@ -179,7 +178,6 @@ async fn register_post(
     session: &Session,
     csrf_verifier: &CsrfVerifier,
     csrf_token: &CsrfToken,
-    locale: Locale,
 ) -> RegisterPostResponse {
     unified(async {
         csrf_verifier
@@ -215,7 +213,7 @@ async fn register_post(
                     "Register".to_string(),
                     &context_html_builder,
                     Some(data),
-                    Some((err, &locale).into()),
+                    Some((err, &context_html_builder.locale).into()),
                     Some(csrf_token.as_html()),
                 ),
             )),

@@ -1,11 +1,11 @@
 use crate::common::context::user::{FromUserContext, UserContext};
 use crate::common::context::{Context, ContextError, FromContext};
-use crate::common::flash::{Flash, FlashMessage, FlashMessageHtml};
+use crate::common::flash::{Flash, FlashMessageHtml};
 use crate::common::html::HtmlBuilder;
 use crate::user::model::UserIdContext;
 use error_stack::Report;
 use maud::{Markup, PreEscaped, html};
-use poem::session::Session;
+use poem::i18n::Locale;
 use std::sync::{Arc, RwLock};
 
 pub struct NavigationItem {
@@ -49,10 +49,11 @@ pub struct ContextHtmlBuilder {
     flash: Option<Flash>,
     user_id_context: Option<Arc<UserIdContext>>,
     data: RwLock<ContextHtmlCellData>,
+    pub locale: Locale,
 }
 
 impl ContextHtmlBuilder {
-    pub fn new(flash: Option<Flash>) -> Self {
+    pub fn new(flash: Option<Flash>, locale: Locale) -> Self {
         Self {
             flash,
             user_id_context: None,
@@ -63,6 +64,7 @@ impl ContextHtmlBuilder {
                 footer: None,
                 current_tag: "".to_string(),
             }),
+            locale,
         }
     }
 
@@ -199,11 +201,7 @@ impl ContextHtmlBuilder {
 
 impl FromContext for ContextHtmlBuilder {
     async fn from_context(ctx: &'_ Context<'_>) -> Result<Self, Report<ContextError>> {
-        let flash: Option<Flash> = match ctx.req.data::<Session>() {
-            None => None,
-            Some(session) => session.get_flash(),
-        };
-        Ok(Self::new(flash))
+        Ok(Self::new(ctx.inject().await?, ctx.inject().await?))
     }
 }
 

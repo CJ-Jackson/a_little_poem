@@ -1,3 +1,5 @@
+use crate::common::context::{Context, ContextError, FromContext};
+use error_stack::Report;
 use maud::{Markup, html};
 use poem::session::Session;
 use serde::{Deserialize, Serialize};
@@ -68,5 +70,14 @@ impl FlashMessage for Session {
         let flash = self.get("flash");
         self.remove("flash");
         flash
+    }
+}
+
+impl FromContext for Option<Flash> {
+    async fn from_context(ctx: &'_ Context<'_>) -> Result<Self, Report<ContextError>> {
+        Ok(match ctx.req.data::<Session>() {
+            None => None,
+            Some(session) => session.get_flash(),
+        })
     }
 }
