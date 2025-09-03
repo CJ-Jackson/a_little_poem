@@ -49,13 +49,11 @@ async fn main() -> Result<(), Report<MainError>> {
         .nest("/user/", route_user())
         .nest("/csrf/", route_csrf());
 
-    let locale = build_resources().change_context(MainError::LocaleError)?;
-
     let route = route
         .with(CookieJarManager::new())
         .with(CookieSession::new(CookieConfig::new()))
         .with(Csrf::new())
-        .data(locale)
+        .data(build_resources().change_context(MainError::LocaleError)?)
         .around(init_cache_local::<Arc<UserIdContext>, _>);
 
     match config.upgrade() {
