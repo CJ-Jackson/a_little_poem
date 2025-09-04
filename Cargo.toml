@@ -20,4 +20,4 @@ uuid = { version = "1.17.0", features = ["v4"] }
 
 [dependencies.cjtoolkit-structured-validator]
 git = "https://github.com/cjtoolkit/cjtoolkit-structured-validator.git"
-rev = "a07b7c2eada0f8dda9f9fc83b02f9b710571f68e"
+rev = "0725689b92fcebf0451d6505e460b894da9eea77"

@@ -1,8 +1,10 @@
 use crate::common::locale::LocaleExtForStore;
 use chrono::{DateTime, Utc};
 use cjtoolkit_structured_validator::common::flag_error::flag_error;
-use cjtoolkit_structured_validator::types::description::{Description, DescriptionError};
-use cjtoolkit_structured_validator::types::name::{Name, NameError};
+use cjtoolkit_structured_validator::types::description::{
+    Description, DescriptionError, DescriptionRules,
+};
+use cjtoolkit_structured_validator::types::name::{Name, NameError, NameRules};
 use poem::i18n::Locale;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -21,6 +23,30 @@ pub struct AddToBucketList {
     pub description: String,
 }
 
+impl AddToBucketList {
+    pub fn parse_description(&self) -> Result<Description, DescriptionError> {
+        Description::parse_custom(
+            Some(self.description.as_str()),
+            DescriptionRules {
+                is_mandatory: true,
+                min_length: Some(5),
+                max_length: Some(100),
+            },
+        )
+    }
+
+    pub fn parse_name(&self) -> Result<Name, NameError> {
+        Name::parse_custom(
+            Some(self.name.as_str()),
+            NameRules {
+                is_mandatory: true,
+                min_length: Some(5),
+                max_length: Some(20),
+            },
+        )
+    }
+}
+
 pub struct AddToBucketListResult(
     pub Result<AddToBucketListValidated, AddToBucketListValidationError>,
 );
@@ -31,11 +57,8 @@ impl Into<AddToBucketListResult> for &AddToBucketList {
             let mut flag = false;
 
             use flag_error as fe;
-            let name = fe(&mut flag, Name::parse(Some(self.name.clone().as_str())));
-            let description = fe(
-                &mut flag,
-                Description::parse(Some(self.description.clone().as_str())),
-            );
+            let name = fe(&mut flag, self.parse_name());
+            let description = fe(&mut flag, self.parse_description());
 
             if flag {
                 return Err(AddToBucketListValidationError { name, description });
