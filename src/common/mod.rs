@@ -15,7 +15,6 @@ pub mod html;
 pub mod icon;
 pub mod locale;
 pub mod password;
-pub mod validation;
 
 #[handler]
 pub async fn common_js(_etag_check: EtagCheck) -> EtagStamp {

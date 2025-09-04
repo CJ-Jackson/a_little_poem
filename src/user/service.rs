@@ -3,7 +3,7 @@ use crate::common::context::{Context, ContextError, FromContext};
 use crate::common::password::Password;
 use crate::user::model::{IdUsername, UserIdContext};
 use crate::user::repository::UserRepository;
-use crate::user::validate::username::IsUsernameTaken;
+use cjtoolkit_structured_validator::types::username::IsUsernameTakenAsync;
 use error_stack::Report;
 use uuid::Uuid;
 
@@ -116,8 +116,8 @@ impl UserRegisterService {
     }
 }
 
-impl IsUsernameTaken for UserRegisterService {
-    async fn is_username_taken(&self, username: &str) -> bool {
+impl IsUsernameTakenAsync for UserRegisterService {
+    async fn is_username_taken_async(&self, username: &str) -> bool {
         self.user_repository
             .username_taken(username.to_string())
             .is_ok()

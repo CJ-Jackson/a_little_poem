@@ -1,11 +1,14 @@
 use crate::common::html::context_html::ContextHtmlBuilder;
-use crate::common::validation::{arc_string_to_html, error_flag};
+use crate::common::html::validate::arc_string_to_html;
 use crate::user::model::{
     UserLoginFormValidated, UserLoginFormValidationError, UserLoginFormValidationErrorMessage,
     UserRegisterFormValidated,
 };
-use crate::user::validate::password::Password;
-use crate::user::validate::username::{IsUsernameTaken, Username};
+use cjtoolkit_structured_validator::common::flag_error::flag_error;
+use cjtoolkit_structured_validator::types::password::{Password, PasswordError, PasswordRules};
+use cjtoolkit_structured_validator::types::username::{
+    IsUsernameTakenAsync, Username, UsernameError, UsernameRules,
+};
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
 
@@ -23,16 +26,22 @@ impl Into<UserRegisterFormResult> for UserRegisterForm {
             let mut flag = false;
             let default_password = Password::default();
 
-            use error_flag as ef;
-            let username = ef(&mut flag, Username::parse(self.username.clone()));
-            let password = ef(&mut flag, Password::parse(self.password.clone()));
-            let password_confirm = ef(
+            use flag_error as fe;
+            let username = fe(
+                &mut flag,
+                Username::parse(Some(self.username.clone().as_str())),
+            );
+            let password = fe(
+                &mut flag,
+                Password::parse(Some(self.password.clone().as_str())),
+            );
+            let password_confirm = fe(
                 &mut flag,
                 password
                     .as_ref()
                     .ok()
                     .unwrap_or(&default_password)
-                    .parse_confirm(self.password_confirm.clone()),
+                    .parse_confirm(self.password_confirm.clone().as_str()),
             );
 
             if flag {
@@ -61,7 +70,7 @@ impl UserRegisterFormResult {
         self.0.map(|v| v.into()).unwrap_or_else(|e| e)
     }
 
-    pub async fn check_username_taken<T: IsUsernameTaken>(
+    pub async fn check_username_taken<T: IsUsernameTakenAsync>(
         self,
         service: &T,
     ) -> UserRegisterFormResult {
@@ -74,7 +83,7 @@ impl UserRegisterFormResult {
         let username = current
             .username
             .unwrap_or_default()
-            .check_if_username_taken(service)
+            .check_username_taken_async(service)
             .await;
         if let Err(username) = username {
             return Self(Err(UserLoginFormValidationError {
@@ -137,9 +146,15 @@ impl Into<UserLoginFormResult> for UserLoginForm {
         UserLoginFormResult((|| {
             let mut flag = false;
 
-            use error_flag as ef;
-            let username = ef(&mut flag, Username::parse_login(self.username.clone()));
-            let password = ef(&mut flag, Password::parse_login(self.password.clone()));
+            use flag_error as fe;
+            let username = fe(
+                &mut flag,
+                UserLoginForm::username_parse_login(self.username.clone().as_str()),
+            );
+            let password = fe(
+                &mut flag,
+                UserLoginForm::password_parse_login(self.password.clone().as_str()),
+            );
 
             if flag {
                 return Err(UserLoginFormValidationError {
@@ -160,5 +175,31 @@ impl Into<UserLoginFormResult> for UserLoginForm {
 impl UserLoginForm {
     pub fn as_validated(&self) -> UserLoginFormResult {
         self.clone().into()
+    }
+
+    pub fn username_parse_login(s: &str) -> Result<Username, UsernameError> {
+        Username::parse_custom(
+            Some(s),
+            UsernameRules {
+                is_mandatory: true,
+                min_length: None,
+                max_length: None,
+            },
+        )
+    }
+
+    pub fn password_parse_login(s: &str) -> Result<Password, PasswordError> {
+        Password::parse_custom(
+            Some(s),
+            PasswordRules {
+                is_mandatory: true,
+                must_have_uppercase: false,
+                must_have_lowercase: false,
+                must_have_special_chars: false,
+                must_have_digit: false,
+                min_length: None,
+                max_length: Some(64),
+            },
+        )
     }
 }

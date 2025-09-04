@@ -1,5 +1,6 @@
-use crate::user::validate::password::{Password, PasswordError};
-use crate::user::validate::username::{Username, UsernameError};
+use crate::common::locale::LocaleExtForStore;
+use cjtoolkit_structured_validator::types::password::{Password, PasswordError};
+use cjtoolkit_structured_validator::types::username::{Username, UsernameError};
 use poem::i18n::Locale;
 use std::sync::Arc;
 
@@ -87,19 +88,19 @@ impl Into<UserLoginFormValidationErrorMessage> for (UserLoginFormValidationError
                 .0
                 .username
                 .err()
-                .map(|e| e.0.as_locale_message(self.1))
+                .map(|e| e.0.as_translated_message(self.1))
                 .unwrap_or_default(),
             password: self
                 .0
                 .password
                 .err()
-                .map(|e| e.0.as_locale_message(self.1))
+                .map(|e| e.0.as_translated_message(self.1))
                 .unwrap_or_default(),
             password_confirm: self
                 .0
                 .password_confirm
                 .err()
-                .map(|e| e.0.as_locale_message(self.1))
+                .map(|e| e.0.as_translated_message(self.1))
                 .unwrap_or_default(),
         }
     }

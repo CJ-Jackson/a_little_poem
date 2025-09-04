@@ -1,7 +1,8 @@
-use crate::bucket_list::validate::description::{Description, DescriptionError};
-use crate::bucket_list::validate::name::{Name, NameError};
-use crate::common::validation::error_flag;
+use crate::common::locale::LocaleExtForStore;
 use chrono::{DateTime, Utc};
+use cjtoolkit_structured_validator::common::flag_error::flag_error;
+use cjtoolkit_structured_validator::types::description::{Description, DescriptionError};
+use cjtoolkit_structured_validator::types::name::{Name, NameError};
 use poem::i18n::Locale;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -29,9 +30,12 @@ impl Into<AddToBucketListResult> for &AddToBucketList {
         AddToBucketListResult((|| {
             let mut flag = false;
 
-            use error_flag as ef;
-            let name = ef(&mut flag, Name::parse(self.name.clone()));
-            let description = ef(&mut flag, Description::parse(self.description.clone()));
+            use flag_error as fe;
+            let name = fe(&mut flag, Name::parse(Some(self.name.clone().as_str())));
+            let description = fe(
+                &mut flag,
+                Description::parse(Some(self.description.clone().as_str())),
+            );
 
             if flag {
                 return Err(AddToBucketListValidationError { name, description });
@@ -79,13 +83,13 @@ impl Into<AddToBucketListValidationErrorResponse> for (AddToBucketListValidation
                 .0
                 .name
                 .err()
-                .map(|e| e.0.as_locale_message(self.1))
+                .map(|e| e.0.as_translated_message(self.1))
                 .unwrap_or_default(),
             description: self
                 .0
                 .description
                 .err()
-                .map(|e| e.0.as_locale_message(self.1))
+                .map(|e| e.0.as_translated_message(self.1))
                 .unwrap_or_default(),
         }
     }

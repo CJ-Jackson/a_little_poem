@@ -1,5 +1,6 @@
 pub mod context_html;
 pub mod css;
+pub mod validate;
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 

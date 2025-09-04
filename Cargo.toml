@@ -18,3 +18,7 @@ argon2 = "0.5.3"
 rmp-serde = "1.3.0"
 unicode-segmentation = "1.12.0"
 uuid = { version = "1.17.0", features = ["v4"] }
+
+[dependencies.cjtoolkit-structured-validator]
+git = "https://github.com/cjtoolkit/cjtoolkit-structured-validator.git"
+rev = "a07b7c2eada0f8dda9f9fc83b02f9b710571f68e"
