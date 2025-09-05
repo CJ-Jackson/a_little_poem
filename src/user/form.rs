@@ -4,11 +4,10 @@ use crate::user::model::{
     UserLoginFormValidated, UserLoginFormValidationError, UserLoginFormValidationErrorMessage,
     UserRegisterFormValidated,
 };
+use crate::user::rules::{password_rules_for_login, username_rules_for_login};
 use cjtoolkit_structured_validator::common::flag_error::flag_error;
-use cjtoolkit_structured_validator::types::password::{Password, PasswordError, PasswordRules};
-use cjtoolkit_structured_validator::types::username::{
-    IsUsernameTakenAsync, Username, UsernameError, UsernameRules,
-};
+use cjtoolkit_structured_validator::types::password::Password;
+use cjtoolkit_structured_validator::types::username::{IsUsernameTakenAsync, Username};
 use maud::{Markup, html};
 use serde::{Deserialize, Serialize};
 
@@ -149,11 +148,11 @@ impl Into<UserLoginFormResult> for UserLoginForm {
             use flag_error as fe;
             let username = fe(
                 &mut flag,
-                UserLoginForm::username_parse_login(self.username.clone().as_str()),
+                Username::parse_custom(Some(self.username.as_str()), username_rules_for_login()),
             );
             let password = fe(
                 &mut flag,
-                UserLoginForm::password_parse_login(self.password.clone().as_str()),
+                Password::parse_custom(Some(self.password.as_str()), password_rules_for_login()),
             );
 
             if flag {
@@ -175,31 +174,5 @@ impl Into<UserLoginFormResult> for UserLoginForm {
 impl UserLoginForm {
     pub fn as_validated(&self) -> UserLoginFormResult {
         self.clone().into()
-    }
-
-    pub fn username_parse_login(s: &str) -> Result<Username, UsernameError> {
-        Username::parse_custom(
-            Some(s),
-            UsernameRules {
-                is_mandatory: true,
-                min_length: None,
-                max_length: None,
-            },
-        )
-    }
-
-    pub fn password_parse_login(s: &str) -> Result<Password, PasswordError> {
-        Password::parse_custom(
-            Some(s),
-            PasswordRules {
-                is_mandatory: true,
-                must_have_uppercase: false,
-                must_have_lowercase: false,
-                must_have_special_chars: false,
-                must_have_digit: false,
-                min_length: None,
-                max_length: Some(64),
-            },
-        )
     }
 }
