@@ -5,7 +5,7 @@ use crate::user::model::{
     UserRegisterFormValidated,
 };
 use crate::user::rules::{PasswordRulesExt, UsernameRulesExt};
-use cjtoolkit_structured_validator::common::flag_error::{FlagCounter, flag_error};
+use cjtoolkit_structured_validator::common::flag_error::FlagCounter;
 use cjtoolkit_structured_validator::types::password::Password;
 use cjtoolkit_structured_validator::types::username::{IsUsernameTakenAsync, Username};
 use maud::{Markup, html};
