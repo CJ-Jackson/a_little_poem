@@ -5,7 +5,7 @@ use crate::user::model::{
     UserRegisterFormValidated,
 };
 use crate::user::rules::{PasswordRulesExt, UsernameRulesExt};
-use cjtoolkit_structured_validator::common::flag_error::flag_error;
+use cjtoolkit_structured_validator::common::flag_error::{FlagCounter, flag_error};
 use cjtoolkit_structured_validator::types::password::Password;
 use cjtoolkit_structured_validator::types::username::{IsUsernameTakenAsync, Username};
 use maud::{Markup, html};
@@ -27,21 +27,19 @@ impl UserRegisterFormResult {
     async fn new<T: IsUsernameTakenAsync>(form: UserRegisterForm, service: &T) -> Self {
         Self(
             async {
-                let mut flag = false;
+                let mut flag = FlagCounter::new();
 
-                use flag_error as fe;
-                let username = fe(
-                    &mut flag,
+                let username = flag.check(
                     Username::parse_user_register(Some(form.username.as_str()), service).await,
                 );
                 let (password, password_confirm) = Password::parse_user_register(
                     Some(form.password.as_str()),
                     form.password_confirm.as_str(),
                 );
-                let password = fe(&mut flag, password);
-                let password_confirm = fe(&mut flag, password_confirm);
+                let password = flag.check(password);
+                let password_confirm = flag.check(password_confirm);
 
-                if flag {
+                if flag.is_flagged() {
                     return Err(UserLoginFormValidationError {
                         username,
                         password,
@@ -109,19 +107,12 @@ pub struct UserLoginFormResult(pub Result<UserLoginFormValidated, UserLoginFormV
 impl Into<UserLoginFormResult> for UserLoginForm {
     fn into(self) -> UserLoginFormResult {
         UserLoginFormResult((|| {
-            let mut flag = false;
+            let mut flag = FlagCounter::new();
 
-            use flag_error as fe;
-            let username = fe(
-                &mut flag,
-                Username::parse_user_login(Some(self.username.as_str())),
-            );
-            let password = fe(
-                &mut flag,
-                Password::parse_user_login(Some(self.password.as_str())),
-            );
+            let username = flag.check(Username::parse_user_login(Some(self.username.as_str())));
+            let password = flag.check(Password::parse_user_login(Some(self.password.as_str())));
 
-            if flag {
+            if flag.is_flagged() {
                 return Err(UserLoginFormValidationError {
                     username,
                     password,

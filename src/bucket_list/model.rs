@@ -1,7 +1,7 @@
 use crate::bucket_list::rules::{DescriptionBucketRulesExt, NameBucketRulesExt};
 use crate::common::locale::LocaleExtForStore;
 use chrono::{DateTime, Utc};
-use cjtoolkit_structured_validator::common::flag_error::flag_error;
+use cjtoolkit_structured_validator::common::flag_error::FlagCounter;
 use cjtoolkit_structured_validator::types::description::{Description, DescriptionError};
 use cjtoolkit_structured_validator::types::name::{Name, NameError};
 use poem::i18n::Locale;
@@ -29,16 +29,13 @@ pub struct AddToBucketListResult(
 impl Into<AddToBucketListResult> for &AddToBucketList {
     fn into(self) -> AddToBucketListResult {
         AddToBucketListResult((|| {
-            let mut flag = false;
+            let mut flag = FlagCounter::new();
 
-            use flag_error as fe;
-            let name = fe(&mut flag, Name::parse_bucket(Some(self.name.as_str())));
-            let description = fe(
-                &mut flag,
-                Description::parse_bucket(Some(self.description.as_str())),
-            );
+            let name = flag.check(Name::parse_bucket(Some(self.name.as_str())));
+            let description =
+                flag.check(Description::parse_bucket(Some(self.description.as_str())));
 
-            if flag {
+            if flag.is_flagged() {
                 return Err(AddToBucketListValidationError { name, description });
             }
 
