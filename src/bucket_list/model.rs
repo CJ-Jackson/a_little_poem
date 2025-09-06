@@ -1,4 +1,4 @@
-use crate::bucket_list::rules::{description_rules, name_rules};
+use crate::bucket_list::rules::{DescriptionBucketRulesExt, NameBucketRulesExt};
 use crate::common::locale::LocaleExtForStore;
 use chrono::{DateTime, Utc};
 use cjtoolkit_structured_validator::common::flag_error::flag_error;
@@ -32,13 +32,10 @@ impl Into<AddToBucketListResult> for &AddToBucketList {
             let mut flag = false;
 
             use flag_error as fe;
-            let name = fe(
-                &mut flag,
-                Name::parse_custom(Some(self.name.as_str()), name_rules()),
-            );
+            let name = fe(&mut flag, Name::parse_bucket(Some(self.name.as_str())));
             let description = fe(
                 &mut flag,
-                Description::parse_custom(Some(self.description.as_str()), description_rules()),
+                Description::parse_bucket(Some(self.description.as_str())),
             );
 
             if flag {

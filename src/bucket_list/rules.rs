@@ -1,8 +1,10 @@
-use cjtoolkit_structured_validator::types::description::DescriptionRules;
-use cjtoolkit_structured_validator::types::name::NameRules;
+use cjtoolkit_structured_validator::types::description::{
+    Description, DescriptionError, DescriptionRules,
+};
+use cjtoolkit_structured_validator::types::name::{Name, NameError, NameRules};
 
 #[inline]
-pub fn description_rules() -> DescriptionRules {
+fn description_rules() -> DescriptionRules {
     DescriptionRules {
         is_mandatory: true,
         min_length: Some(5),
@@ -11,10 +13,30 @@ pub fn description_rules() -> DescriptionRules {
 }
 
 #[inline]
-pub fn name_rules() -> NameRules {
+fn name_rules() -> NameRules {
     NameRules {
         is_mandatory: true,
         min_length: Some(5),
         max_length: Some(20),
+    }
+}
+
+pub trait DescriptionBucketRulesExt {
+    fn parse_bucket(s: Option<&str>) -> Result<Description, DescriptionError>;
+}
+
+impl DescriptionBucketRulesExt for Description {
+    fn parse_bucket(s: Option<&str>) -> Result<Description, DescriptionError> {
+        Self::parse_custom(s, description_rules())
+    }
+}
+
+pub trait NameBucketRulesExt {
+    fn parse_bucket(s: Option<&str>) -> Result<Name, NameError>;
+}
+
+impl NameBucketRulesExt for Name {
+    fn parse_bucket(s: Option<&str>) -> Result<Name, NameError> {
+        Self::parse_custom(s, name_rules())
     }
 }

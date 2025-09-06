@@ -309,7 +309,7 @@ dependencies = [
 [[package]]
 name = "cjtoolkit-structured-validator"
 version = "0.1.0"
-source = "git+https://github.com/cjtoolkit/cjtoolkit-structured-validator.git?rev=0725689b92fcebf0451d6505e460b894da9eea77#0725689b92fcebf0451d6505e460b894da9eea77"
+source = "git+https://github.com/cjtoolkit/cjtoolkit-structured-validator.git?rev=10fd6735b8990ed25d84a011cd7327bc24d7b703#10fd6735b8990ed25d84a011cd7327bc24d7b703"
 dependencies = [
  "blake3",
  "thiserror 2.0.16",
