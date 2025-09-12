@@ -64,8 +64,6 @@ pub trait PasswordRulesExt {
     fn parse_user_login(s: Option<&str>) -> Result<Password, PasswordError>;
 }
 
-const PASSWORD_ENTROPY_MIN: f64 = 100.0;
-
 impl PasswordRulesExt for Password {
     fn parse_user_register(password: Option<&str>, password_confirm: &str) -> PasswordTuple {
         let password = Password::parse(password);
@@ -101,15 +99,17 @@ impl PasswordStatus {
         }
     }
 
+    const PASSWORD_ENTROPY_MIN: f64 = 60.0;
+
     fn check_password_entropy(password: &Password) -> Result<(), PasswordError> {
         let mut messages = ValidateErrorCollector::new();
-        if entropy(password.as_str()) < PASSWORD_ENTROPY_MIN {
+        if entropy(password.as_str()) < Self::PASSWORD_ENTROPY_MIN {
             messages.push((
                 format!(
                     "Password entropy score must be over {}",
-                    PASSWORD_ENTROPY_MIN
+                    Self::PASSWORD_ENTROPY_MIN
                 ),
-                Box::new(PasswordEntropyLocale(PASSWORD_ENTROPY_MIN)),
+                Box::new(PasswordEntropyLocale(Self::PASSWORD_ENTROPY_MIN)),
             ));
         }
         PasswordError::validate_check(messages)?;
