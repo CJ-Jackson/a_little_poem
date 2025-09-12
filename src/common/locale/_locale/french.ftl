@@ -20,3 +20,6 @@ validate-must-have-digit = MDoit contenir au moins un chiffre
 
 validate-password-does-not-match = Ne correspond pas
 validate-username-taken = Déjà pris
+
+validate-password-entropy = Le score d'entropie du mot de passe doit être supérieur à { $min },
+    Essayez d'utiliser un gestionnaire de mots de passe ?

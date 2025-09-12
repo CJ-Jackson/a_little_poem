@@ -12,6 +12,7 @@ dependencies = [
  "error-stack",
  "figment",
  "maud",
+ "paspio",
  "poem",
  "rmp-serde",
  "rusqlite",
@@ -1056,6 +1057,12 @@ dependencies = [
  "smallvec",
  "windows-targets",
 ]
+
+[[package]]
+name = "paspio"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "489f809b6b23fcf2a49012c0cbf090100bc0db97d42e3a35ebba6070a94dbcc1"
 
 [[package]]
 name = "password-hash"

@@ -20,3 +20,5 @@ validate-must-have-digit = Must contain at least one digit
 
 validate-password-does-not-match = Does not match
 validate-username-taken = Already taken
+
+validate-password-entropy = Password entropy score must be over { $min }, try using a password manager?

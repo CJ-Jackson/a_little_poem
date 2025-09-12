@@ -1,5 +1,6 @@
 pub mod flag;
 pub mod form;
+pub(self) mod locale;
 pub mod model;
 pub mod repository;
 pub mod route;
