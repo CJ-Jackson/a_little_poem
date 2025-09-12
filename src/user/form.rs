@@ -48,9 +48,9 @@ impl UserRegisterFormResult {
                 }
 
                 Ok(UserRegisterFormValidated {
-                    username: username.unwrap_or_default(),
-                    password: password.unwrap_or_default(),
-                    password_confirm: password_confirm.unwrap_or_default(),
+                    username: username.expect("Username is not empty"),
+                    password: password.expect("Password is not empty"),
+                    password_confirm: password_confirm.expect("Password confirm is not empty"),
                 })
             }
             .await,
@@ -121,8 +121,8 @@ impl Into<UserLoginFormResult> for UserLoginForm {
             }
 
             Ok(UserLoginFormValidated {
-                username: username.unwrap_or_default(),
-                password: password.unwrap_or_default(),
+                username: username.expect("Username is not empty"),
+                password: password.expect("Password is not empty"),
             })
         })())
     }

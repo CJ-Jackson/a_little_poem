@@ -1,5 +1,5 @@
 use crate::common::html::HtmlBuilder;
-use error_stack::{Context, Report, ResultExt};
+use error_stack::{Report, ResultExt};
 use maud::{PreEscaped, html};
 use poem::error::ResponseError;
 use poem::http::StatusCode;
@@ -64,25 +64,25 @@ pub trait ExtraResultExt: ResultExt {
 
     fn change_context_attach_previous_msg<C>(self, context: C) -> Result<Self::Ok, Report<C>>
     where
-        C: Context;
+        C: Error + Send + Sync + 'static;
 
     fn change_context_attach_previous_msg_lazy<C, F>(
         self,
         context: F,
     ) -> Result<Self::Ok, Report<C>>
     where
-        C: Context,
+        C: Error + Send + Sync + 'static,
         F: FnOnce() -> C;
 
     fn change_context_pass_ref_lazy<C, F>(self, context: F) -> Result<Self::Ok, Report<C>>
     where
-        C: Context,
+        C: Error + Send + Sync + 'static,
         F: FnOnce(&Report<Self::Context>) -> C;
 }
 
-impl<T, C> ExtraResultExt for error_stack::Result<T, C>
+impl<T, C> ExtraResultExt for Result<T, Report<C>>
 where
-    C: Context,
+    C: Error + Send + Sync + 'static,
 {
     fn attach_critical(self, msg: String) -> Self {
         match self {
@@ -103,34 +103,34 @@ where
 
     fn change_context_attach_previous_msg<C2>(self, context: C2) -> Result<T, Report<C2>>
     where
-        C2: Context,
+        C2: Error + Send + Sync + 'static,
     {
         match self {
             Ok(ok) => Ok(ok),
             Err(report) => {
                 let msg = report.to_string();
-                Err(report.change_context(context).attach_printable(msg))
+                Err(report.change_context(context).attach(msg))
             }
         }
     }
 
     fn change_context_attach_previous_msg_lazy<C2, F>(self, context: F) -> Result<T, Report<C2>>
     where
-        C2: Context,
+        C2: Error + Send + Sync + 'static,
         F: FnOnce() -> C2,
     {
         match self {
             Ok(ok) => Ok(ok),
             Err(report) => {
                 let msg = report.to_string();
-                Err(report.change_context(context()).attach_printable(msg))
+                Err(report.change_context(context()).attach(msg))
             }
         }
     }
 
     fn change_context_pass_ref_lazy<C2, F>(self, context: F) -> Result<T, Report<C2>>
     where
-        C2: Context,
+        C2: Error + Send + Sync + 'static,
         F: FnOnce(&Report<Self::Context>) -> C2,
     {
         match self {

@@ -39,11 +39,8 @@ impl UsernameRulesExt for Username {
         service: &T,
     ) -> Result<Username, UsernameError> {
         let mut username = Username::parse(s);
-        if username.is_ok() {
-            username = username
-                .unwrap_or_default()
-                .check_username_taken_async(service)
-                .await;
+        if let Ok(username_ref) = username.as_ref() {
+            username = username_ref.check_username_taken_async(service).await;
         }
         username
     }
@@ -65,13 +62,12 @@ pub trait PasswordRulesExt {
 
 impl PasswordRulesExt for Password {
     fn parse_user_register(password: Option<&str>, password_confirm: &str) -> PasswordTuple {
-        let default_password = Password::default();
         let password = Password::parse(password);
-        let password_confirm = password
-            .as_ref()
-            .ok()
-            .unwrap_or(&default_password)
-            .parse_confirm(password_confirm);
+        let password_confirm = if let Ok(password_ref) = password.as_ref() {
+            password_ref.parse_confirm(password_confirm)
+        } else {
+            password.clone()
+        };
         (password, password_confirm)
     }
 

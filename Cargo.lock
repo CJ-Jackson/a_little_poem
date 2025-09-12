@@ -308,9 +308,9 @@ dependencies = [
 
 [[package]]
 name = "cjtoolkit-structured-validator"
-version = "0.1.1"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d007444d0d2376aa15fe164d3d2c93624c79bbf96ef72cd0365df4600d877029"
+checksum = "a7447612f40f6a95b2ccff9f81e1dffd08254a45abb34bcb9237d5e4ee3ea8fc"
 dependencies = [
  "blake3",
  "thiserror 2.0.16",
