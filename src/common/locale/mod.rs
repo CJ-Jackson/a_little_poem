@@ -1,5 +1,6 @@
 use crate::common::context::{Context, ContextError, FromContext};
 use cjtoolkit_structured_validator::common::locale::{LocaleData, LocaleValue, ValidateErrorStore};
+use cjtoolkit_structured_validator::common::validation_collector::AsValidateErrorStore;
 use error_stack::{Report, ResultExt};
 use poem::FromRequest;
 use poem::error::I18NError;
@@ -68,5 +69,24 @@ impl LocaleExtForStore for ValidateErrorStore {
             .iter()
             .map(|e| e.1.get_locale_data().get_translation(locale, e.0.clone()))
             .collect()
+    }
+}
+
+pub trait LocaleExtForResult: AsValidateErrorStore {
+    fn as_translated_message(&self, locale: &Locale) -> Arc<[String]>;
+
+    fn as_original_message(&self) -> Arc<[String]>;
+}
+
+impl<T, E> LocaleExtForResult for Result<T, E>
+where
+    for<'a> &'a E: Into<ValidateErrorStore>,
+{
+    fn as_translated_message(&self, locale: &Locale) -> Arc<[String]> {
+        self.as_validate_store().as_translated_message(locale)
+    }
+
+    fn as_original_message(&self) -> Arc<[String]> {
+        self.as_validate_store().as_original_message()
     }
 }

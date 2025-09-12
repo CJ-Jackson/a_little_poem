@@ -1,5 +1,5 @@
 use crate::bucket_list::rules::{DescriptionBucketRulesExt, NameBucketRulesExt};
-use crate::common::locale::LocaleExtForStore;
+use crate::common::locale::{LocaleExtForResult, LocaleExtForStore};
 use chrono::{DateTime, Utc};
 use cjtoolkit_structured_validator::common::flag_error::FlagCounter;
 use cjtoolkit_structured_validator::types::description::{Description, DescriptionError};
@@ -60,16 +60,8 @@ pub struct AddToBucketListValidationError {
 impl Into<AddToBucketListValidationErrorResponse> for AddToBucketListValidationError {
     fn into(self) -> AddToBucketListValidationErrorResponse {
         AddToBucketListValidationErrorResponse {
-            name: self
-                .name
-                .err()
-                .map(|e| e.0.as_original_message())
-                .unwrap_or_default(),
-            description: self
-                .description
-                .err()
-                .map(|e| e.0.as_original_message())
-                .unwrap_or_default(),
+            name: self.name.as_original_message(),
+            description: self.description.as_original_message(),
         }
     }
 }
@@ -77,18 +69,8 @@ impl Into<AddToBucketListValidationErrorResponse> for AddToBucketListValidationE
 impl Into<AddToBucketListValidationErrorResponse> for (AddToBucketListValidationError, &Locale) {
     fn into(self) -> AddToBucketListValidationErrorResponse {
         AddToBucketListValidationErrorResponse {
-            name: self
-                .0
-                .name
-                .err()
-                .map(|e| e.0.as_translated_message(self.1))
-                .unwrap_or_default(),
-            description: self
-                .0
-                .description
-                .err()
-                .map(|e| e.0.as_translated_message(self.1))
-                .unwrap_or_default(),
+            name: self.0.name.as_translated_message(self.1),
+            description: self.0.description.as_translated_message(self.1),
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::common::locale::LocaleExtForStore;
+use crate::common::locale::{LocaleExtForResult, LocaleExtForStore};
 use cjtoolkit_structured_validator::types::password::{Password, PasswordError};
 use cjtoolkit_structured_validator::types::username::{Username, UsernameError};
 use poem::i18n::Locale;
@@ -62,21 +62,9 @@ impl Default for UserLoginFormValidationError {
 impl Into<UserLoginFormValidationErrorMessage> for UserLoginFormValidationError {
     fn into(self) -> UserLoginFormValidationErrorMessage {
         UserLoginFormValidationErrorMessage {
-            username: self
-                .username
-                .err()
-                .map(|e| e.0.as_original_message())
-                .unwrap_or_default(),
-            password: self
-                .password
-                .err()
-                .map(|e| e.0.as_original_message())
-                .unwrap_or_default(),
-            password_confirm: self
-                .password_confirm
-                .err()
-                .map(|e| e.0.as_original_message())
-                .unwrap_or_default(),
+            username: self.username.as_original_message(),
+            password: self.password.as_original_message(),
+            password_confirm: self.password_confirm.as_original_message(),
         }
     }
 }
@@ -84,24 +72,9 @@ impl Into<UserLoginFormValidationErrorMessage> for UserLoginFormValidationError 
 impl Into<UserLoginFormValidationErrorMessage> for (UserLoginFormValidationError, &Locale) {
     fn into(self) -> UserLoginFormValidationErrorMessage {
         UserLoginFormValidationErrorMessage {
-            username: self
-                .0
-                .username
-                .err()
-                .map(|e| e.0.as_translated_message(self.1))
-                .unwrap_or_default(),
-            password: self
-                .0
-                .password
-                .err()
-                .map(|e| e.0.as_translated_message(self.1))
-                .unwrap_or_default(),
-            password_confirm: self
-                .0
-                .password_confirm
-                .err()
-                .map(|e| e.0.as_translated_message(self.1))
-                .unwrap_or_default(),
+            username: self.0.username.as_translated_message(self.1),
+            password: self.0.password.as_translated_message(self.1),
+            password_confirm: self.0.password_confirm.as_translated_message(self.1),
         }
     }
 }
