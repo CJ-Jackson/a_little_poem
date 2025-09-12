@@ -66,7 +66,7 @@ impl PasswordRulesExt for Password {
         let password_confirm = if let Ok(password_ref) = password.as_ref() {
             password_ref.parse_confirm(password_confirm)
         } else {
-            password.clone()
+            Err(PasswordError::default())
         };
         (password, password_confirm)
     }
