@@ -1,4 +1,4 @@
-use crate::common::locale::{LocaleExtForResult, LocaleExtForStore};
+use crate::common::locale::LocaleExtForResult;
 use cjtoolkit_structured_validator::types::password::{Password, PasswordError};
 use cjtoolkit_structured_validator::types::username::{Username, UsernameError};
 use poem::i18n::Locale;

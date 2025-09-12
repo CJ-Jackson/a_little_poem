@@ -1,5 +1,5 @@
 use crate::bucket_list::rules::{DescriptionBucketRulesExt, NameBucketRulesExt};
-use crate::common::locale::{LocaleExtForResult, LocaleExtForStore};
+use crate::common::locale::LocaleExtForResult;
 use chrono::{DateTime, Utc};
 use cjtoolkit_structured_validator::common::flag_error::FlagCounter;
 use cjtoolkit_structured_validator::types::description::{Description, DescriptionError};
