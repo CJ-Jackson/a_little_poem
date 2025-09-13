@@ -2,7 +2,8 @@ use crate::common::context::{Context, ContextError, FromContext};
 use crate::common::db::SqliteClient;
 use crate::user::model::{IdPassword, IdUsername};
 use error_stack::{Report, ResultExt};
-use rusqlite::{OptionalExtension, named_params};
+use rusqlite::{Connection, OptionalExtension, named_params};
+use std::sync::MutexGuard;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -31,11 +32,7 @@ impl UserRepository {
         token: String,
         user_id: i64,
     ) -> Result<(), Report<UserRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| Report::new(UserRepositoryError::LockError))?;
+        let conn = self.borrow_conn()?;
 
         conn.execute(
             include_str!("_sql/add_token.sql"),
@@ -50,11 +47,7 @@ impl UserRepository {
     }
 
     pub fn delete_token(&self, token: String) -> Result<(), Report<UserRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| Report::new(UserRepositoryError::LockError))?;
+        let conn = self.borrow_conn()?;
 
         conn.execute(
             include_str!("_sql/delete_token.sql"),
@@ -68,11 +61,7 @@ impl UserRepository {
     }
 
     pub fn find_by_token(&self, token: String) -> Result<IdUsername, Report<UserRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| Report::new(UserRepositoryError::LockError))?;
+        let conn = self.borrow_conn()?;
 
         let mut stmt = conn
             .prepare_cached(include_str!("_sql/find_by_token.sql"))
@@ -103,11 +92,7 @@ impl UserRepository {
         &self,
         username: String,
     ) -> Result<IdPassword, Report<UserRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| Report::new(UserRepositoryError::LockError))?;
+        let conn = self.borrow_conn()?;
 
         let mut stmt = conn
             .prepare_cached(include_str!("_sql/get_user_password.sql"))
@@ -139,11 +124,7 @@ impl UserRepository {
         username: String,
         password: Box<[u8]>,
     ) -> Result<(), Report<UserRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| Report::new(UserRepositoryError::LockError))?;
+        let conn = self.borrow_conn()?;
 
         conn.execute(
             include_str!("_sql/register_user.sql"),
@@ -158,11 +139,7 @@ impl UserRepository {
     }
 
     pub fn username_taken(&self, username: String) -> Result<bool, Report<UserRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| Report::new(UserRepositoryError::LockError))?;
+        let conn = self.borrow_conn()?;
 
         let mut stmt = conn
             .prepare_cached(include_str!("_sql/username_taken.sql"))
@@ -179,6 +156,15 @@ impl UserRepository {
             .change_context(UserRepositoryError::QueryError)?;
 
         Ok(row.unwrap_or_default())
+    }
+
+    fn borrow_conn(&'_ self) -> Result<MutexGuard<'_, Connection>, Report<UserRepositoryError>> {
+        let guard = self
+            .sqlite_client
+            .get_conn()
+            .lock()
+            .map_err(|_| Report::new(UserRepositoryError::LockError))?;
+        Ok(guard)
     }
 }
 

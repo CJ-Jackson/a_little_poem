@@ -4,7 +4,8 @@ use crate::common::db::SqliteClient;
 use error_stack::{Report, ResultExt};
 use poem::error::ResponseError;
 use poem::http::StatusCode;
-use rusqlite::named_params;
+use rusqlite::{Connection, named_params};
+use std::sync::MutexGuard;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -35,11 +36,7 @@ impl BucketListRepository {
     pub fn get_all_from_bucket_list(
         &self,
     ) -> Result<Box<[BucketListItem]>, Report<BucketListRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| BucketListRepositoryError::LockError)?;
+        let conn = self.borrow_conn()?;
 
         let mut stmt = conn
             .prepare_cached(include_str!("_sql/get_all_from_bucket_list.sql"))
@@ -68,11 +65,7 @@ impl BucketListRepository {
         &self,
         add_to_bucket_list: &AddToBucketListValidated,
     ) -> Result<(), Report<BucketListRepositoryError>> {
-        let conn = self
-            .sqlite_client
-            .get_conn()
-            .lock()
-            .map_err(|_| BucketListRepositoryError::LockError)?;
+        let conn = self.borrow_conn()?;
 
         conn.execute(
             include_str!("_sql/add_to_bucket_list.sql"),
@@ -84,6 +77,17 @@ impl BucketListRepository {
         .change_context(BucketListRepositoryError::QueryError)?;
 
         Ok(())
+    }
+
+    fn borrow_conn(
+        &'_ self,
+    ) -> Result<MutexGuard<'_, Connection>, Report<BucketListRepositoryError>> {
+        let guard = self
+            .sqlite_client
+            .get_conn()
+            .lock()
+            .map_err(|_| Report::new(BucketListRepositoryError::LockError))?;
+        Ok(guard)
     }
 }
 
