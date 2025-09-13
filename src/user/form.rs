@@ -1,5 +1,5 @@
 use crate::common::html::context_html::ContextHtmlBuilder;
-use crate::common::html::validate::arc_string_to_html;
+use crate::common::html::validate::ValidateErrorMessageExt;
 use crate::user::model::{
     UserLoginFormValidated, UserLoginFormValidationError, UserLoginFormValidationErrorMessage,
     UserRegisterFormValidated,
@@ -83,11 +83,11 @@ impl UserRegisterForm {
                 form method="post" .form {
                     (token)
                     input .form-item type="text" name="username" placeholder="Username" value=(user_register_form.username);
-                    (arc_string_to_html(errors.username))
+                    (errors.username.into_error_html())
                     input .form-item type="password" name="password" placeholder="Password";
-                    (arc_string_to_html(errors.password))
+                    (errors.password.into_error_html())
                     input .form-item type="password" name="password_confirm" placeholder="Confirm password";
-                    (arc_string_to_html(errors.password_confirm))
+                    (errors.password_confirm.into_error_html())
                     button .btn .btn-sky-blue .mt-3 type="submit" { "Register" };
                 }
             })
