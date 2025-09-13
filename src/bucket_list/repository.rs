@@ -42,7 +42,7 @@ impl BucketListRepository {
             .map_err(|_| BucketListRepositoryError::LockError)?;
 
         let mut stmt = conn
-            .prepare(include_str!("_sql/get_all_from_bucket_list.sql"))
+            .prepare_cached(include_str!("_sql/get_all_from_bucket_list.sql"))
             .change_context(BucketListRepositoryError::QueryError)?;
 
         let item_iter = stmt

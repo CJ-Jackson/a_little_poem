@@ -120,7 +120,8 @@ impl IsUsernameTakenAsync for UserRegisterService {
     async fn is_username_taken_async(&self, username: &str) -> bool {
         self.user_repository
             .username_taken(username.to_string())
-            .is_ok()
+            .ok()
+            .unwrap_or_default()
     }
 }
 

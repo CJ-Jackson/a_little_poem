@@ -2,7 +2,7 @@ use crate::common::context::{Context, ContextError, FromContext};
 use crate::common::db::SqliteClient;
 use crate::user::model::{IdPassword, IdUsername};
 use error_stack::{Report, ResultExt};
-use rusqlite::named_params;
+use rusqlite::{OptionalExtension, named_params};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -75,11 +75,11 @@ impl UserRepository {
             .map_err(|_| Report::new(UserRepositoryError::LockError))?;
 
         let mut stmt = conn
-            .prepare(include_str!("_sql/find_by_token.sql"))
+            .prepare_cached(include_str!("_sql/find_by_token.sql"))
             .change_context(UserRepositoryError::QueryError)?;
 
-        let mut item_iter = stmt
-            .query_map(
+        let row: Option<IdUsername> = stmt
+            .query_one(
                 named_params! {
                     ":token": token,
                 },
@@ -90,13 +90,13 @@ impl UserRepository {
                     })
                 },
             )
+            .optional()
             .change_context(UserRepositoryError::QueryError)?;
 
-        let item = item_iter
-            .next()
-            .ok_or_else(|| Report::new(UserRepositoryError::NotFoundError))?;
-
-        item.change_context(UserRepositoryError::RowValueError)
+        match row {
+            Some(item) => Ok(item),
+            None => Err(Report::new(UserRepositoryError::NotFoundError)),
+        }
     }
 
     pub fn get_user_password(
@@ -110,11 +110,11 @@ impl UserRepository {
             .map_err(|_| Report::new(UserRepositoryError::LockError))?;
 
         let mut stmt = conn
-            .prepare(include_str!("_sql/get_user_password.sql"))
+            .prepare_cached(include_str!("_sql/get_user_password.sql"))
             .change_context(UserRepositoryError::QueryError)?;
 
-        let mut item_iter = stmt
-            .query_map(
+        let row: Option<IdPassword> = stmt
+            .query_one(
                 named_params! {
                     ":username": username,
                 },
@@ -125,13 +125,13 @@ impl UserRepository {
                     })
                 },
             )
+            .optional()
             .change_context(UserRepositoryError::QueryError)?;
 
-        let item = item_iter
-            .next()
-            .ok_or_else(|| Report::new(UserRepositoryError::NotFoundError))?;
-
-        item.change_context(UserRepositoryError::RowValueError)
+        match row {
+            Some(item) => Ok(item),
+            None => Err(Report::new(UserRepositoryError::NotFoundError)),
+        }
     }
 
     pub fn register_user(
@@ -165,23 +165,20 @@ impl UserRepository {
             .map_err(|_| Report::new(UserRepositoryError::LockError))?;
 
         let mut stmt = conn
-            .prepare(include_str!("_sql/username_taken.sql"))
+            .prepare_cached(include_str!("_sql/username_taken.sql"))
             .change_context(UserRepositoryError::QueryError)?;
 
-        let mut item_iter = stmt
-            .query_map(
+        let row: Option<bool> = stmt
+            .query_one(
                 named_params! {
                     ":username": username,
                 },
                 |row| Ok(row.get("taken")?),
             )
+            .optional()
             .change_context(UserRepositoryError::QueryError)?;
 
-        let item = item_iter
-            .next()
-            .ok_or_else(|| Report::new(UserRepositoryError::NotFoundError))?;
-
-        item.change_context(UserRepositoryError::RowValueError)
+        Ok(row.unwrap_or_default())
     }
 }
 
