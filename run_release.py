@@ -5,12 +5,10 @@ import uuid
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-etag = str(uuid.uuid4())
-
 cmds: list = [
     ["./run_tailwind.py"],
     ["./run_minify.py"],
-    ["cargo", "build", "--release", "--config", f"env.ETAG='{etag}'"]
+    ["cargo", "build", "--release"]
 ]
 
 for cmd in cmds:
