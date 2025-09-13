@@ -6,6 +6,7 @@ use crate::common::adapter::{ReportAdapter, ResultAdapter};
 use crate::common::context::Dep;
 use crate::common::context::user::JustDep;
 use crate::common::csrf::CsrfHeaderChecker;
+use crate::common::embed::{Asset, EmbedAsString};
 use crate::common::error::{ErrorReportResponse, JsonErrorOutput};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
@@ -67,10 +68,11 @@ async fn main_bucket_list(JustDep(context_html_builder, _): JustDep<ContextHtmlB
 }
 
 fn get_bucket_list_js() -> Markup {
-    #[cfg(debug_assertions)]
-    let js = include_str!("_asset/bucket_list.js");
-    #[cfg(not(debug_assertions))]
-    let js = include_str!("_asset/bucket_list.min.js");
+    let js = if cfg!(debug_assertions) {
+        Asset::get("js/bucket_list.js").as_string()
+    } else {
+        Asset::get("js/bucket_list.min.js").as_string()
+    };
     html! {
         script type="module" { (PreEscaped(js)) }
     }

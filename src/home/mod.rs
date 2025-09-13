@@ -1,5 +1,5 @@
 use crate::common::context::user::JustDep;
-use crate::common::etag::{EtagCheck, EtagStamp};
+use crate::common::embed::{Asset, EmbedAsString};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use maud::{Markup, PreEscaped, html};
@@ -37,10 +37,11 @@ pub async fn home_page(JustDep(context_html_builder, _): JustDep<ContextHtmlBuil
 }
 
 fn root_js() -> Markup {
-    #[cfg(debug_assertions)]
-    let js = include_str!("_asset/root.js");
-    #[cfg(not(debug_assertions))]
-    let js = include_str!("_asset/root.min.js");
+    let js = if cfg!(debug_assertions) {
+        Asset::get("js/root.js").as_string()
+    } else {
+        Asset::get("js/root.min.js").as_string()
+    };
     html! {
         script type="module" { (PreEscaped(js)) }
     }
@@ -49,13 +50,4 @@ fn root_js() -> Markup {
 #[handler]
 pub async fn js_array() -> Json<Value> {
     Json(json!(["Apple", "Orange", "Banana", "Strawberry", "Mango"]))
-}
-
-#[handler]
-pub async fn favicon(_etag_check: EtagCheck) -> EtagStamp {
-    let v = *include_bytes!("_asset/favicon.ico");
-    EtagStamp {
-        data: v.into(),
-        content_type: "image/x-icon",
-    }
 }

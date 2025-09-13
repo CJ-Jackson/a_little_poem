@@ -1,14 +1,14 @@
 use crate::bucket_list::route::route_bucket_list;
 use crate::common::cache_local::init_cache_local;
-use crate::common::common_js;
 use crate::common::config::Config;
 use crate::common::csrf::route_csrf;
-use crate::common::html::css::main_css;
+use crate::common::embed::Asset;
 use crate::common::locale::build_resources;
-use crate::home::{favicon, home_page, js_array};
+use crate::home::{home_page, js_array};
 use crate::user::model::UserIdContext;
 use crate::user::route::route_user;
 use error_stack::{Report, ResultExt};
+use poem::endpoint::{EmbeddedFileEndpoint, EmbeddedFilesEndpoint};
 use poem::listener::TcpListener;
 use poem::middleware::{CookieJarManager, Csrf};
 use poem::session::{CookieConfig, CookieSession};
@@ -40,14 +40,16 @@ async fn main() -> Result<(), Report<MainError>> {
     let route = Route::new()
         .at("/", get(home_page))
         .at("/array", get(js_array))
-        .at("/favicon.ico", get(favicon))
-        .at("/main.css", get(main_css))
-        .at("/common.js", get(common_js));
+        .at(
+            "/favicon.ico",
+            EmbeddedFileEndpoint::<Asset>::new("/favicon/favicon.ico"),
+        );
 
     let route = route
         .nest("/bucket-list/", route_bucket_list())
         .nest("/user/", route_user())
-        .nest("/csrf/", route_csrf());
+        .nest("/csrf/", route_csrf())
+        .nest("/assets/", EmbeddedFilesEndpoint::<Asset>::new());
 
     let route = route
         .with(CookieJarManager::new())

@@ -12,7 +12,7 @@ if os.getenv('MINIFY') == "true":
     minify = True
 
 map_css: dict = {
-    "src/common/html/_asset/tailwind/main.css": "src/common/html/_asset/main.css"
+    "asset/css/tailwind.css": "asset/embed/css/main.css"
 }
 
 for key, value in map_css.items():
