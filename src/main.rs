@@ -4,7 +4,7 @@ use crate::common::config::Config;
 use crate::common::csrf::{CSRF_PATH, route_csrf};
 use crate::common::embed::{AssetFilesEndpoint, EMBED_PATH};
 use crate::common::locale::build_resources;
-use crate::home::home_page_route;
+use crate::home::route_home_page;
 use crate::user::model::UserIdContext;
 use crate::user::route::{USER_PATH, route_user};
 use error_stack::{Report, ResultExt};
@@ -36,7 +36,7 @@ async fn main() -> Result<(), Report<MainError>> {
         .await
         .change_context(MainError::ConfigError)?;
 
-    let route = home_page_route();
+    let route = route_home_page();
 
     let route = route
         .nest(BUCKET_LIST_PATH, route_bucket_list())

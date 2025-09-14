@@ -52,7 +52,7 @@ pub async fn js_array() -> Json<Value> {
     Json(json!(["Apple", "Orange", "Banana", "Strawberry", "Mango"]))
 }
 
-pub fn home_page_route() -> Route {
+pub fn route_home_page() -> Route {
     Route::new()
         .at("/", get(home_page))
         .at("/array", get(js_array))
