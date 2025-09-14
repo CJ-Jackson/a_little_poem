@@ -8,6 +8,8 @@ use serde_json::{Value, json};
 use std::error::Error;
 use thiserror::Error;
 
+pub const CSRF_PATH: &'static str = "/csrf/";
+
 pub trait CsrfTokenHtml {
     fn as_html(&self) -> Markup;
 }
@@ -72,6 +74,5 @@ async fn fetch_csrf_token(token: &CsrfToken) -> Json<Value> {
 }
 
 pub fn route_csrf() -> poem::Route {
-    poem::Route::new()
-        .at("/token", fetch_csrf_token)
+    poem::Route::new().at("/token", fetch_csrf_token)
 }

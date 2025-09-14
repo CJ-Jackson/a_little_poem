@@ -1,18 +1,17 @@
-use crate::bucket_list::route::route_bucket_list;
+use crate::bucket_list::route::{BUCKET_LIST_PATH, route_bucket_list};
 use crate::common::cache_local::init_cache_local;
 use crate::common::config::Config;
-use crate::common::csrf::route_csrf;
-use crate::common::embed::Asset;
+use crate::common::csrf::{CSRF_PATH, route_csrf};
+use crate::common::embed::{AssetFilesEndpoint, EMBED_PATH};
 use crate::common::locale::build_resources;
-use crate::home::{home_page, js_array};
+use crate::home::home_page_route;
 use crate::user::model::UserIdContext;
-use crate::user::route::route_user;
+use crate::user::route::{USER_PATH, route_user};
 use error_stack::{Report, ResultExt};
-use poem::endpoint::{EmbeddedFileEndpoint, EmbeddedFilesEndpoint};
 use poem::listener::TcpListener;
 use poem::middleware::{CookieJarManager, Csrf};
 use poem::session::{CookieConfig, CookieSession};
-use poem::{EndpointExt, Route, Server, get};
+use poem::{EndpointExt, Server};
 use std::sync::Arc;
 use thiserror::Error;
 
@@ -37,19 +36,13 @@ async fn main() -> Result<(), Report<MainError>> {
         .await
         .change_context(MainError::ConfigError)?;
 
-    let route = Route::new()
-        .at("/", get(home_page))
-        .at("/array", get(js_array))
-        .at(
-            "/favicon.ico",
-            EmbeddedFileEndpoint::<Asset>::new("/favicon/favicon.ico"),
-        );
+    let route = home_page_route();
 
     let route = route
-        .nest("/bucket-list/", route_bucket_list())
-        .nest("/user/", route_user())
-        .nest("/csrf/", route_csrf())
-        .nest("/assets/", EmbeddedFilesEndpoint::<Asset>::new());
+        .nest(BUCKET_LIST_PATH, route_bucket_list())
+        .nest(USER_PATH, route_user())
+        .nest(CSRF_PATH, route_csrf())
+        .nest(EMBED_PATH, AssetFilesEndpoint::new());
 
     let route = route
         .with(CookieJarManager::new())

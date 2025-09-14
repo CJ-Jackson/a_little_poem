@@ -1,10 +1,10 @@
 use crate::common::context::user::JustDep;
-use crate::common::embed::{Asset, EmbedAsString};
+use crate::common::embed::{Asset, AssetFileEndpoint, EmbedAsString};
 use crate::common::html::context_html::ContextHtmlBuilder;
 use crate::common::icon::plus_icon;
 use maud::{Markup, PreEscaped, html};
-use poem::handler;
 use poem::web::Json;
+use poem::{Route, get, handler};
 use serde_json::{Value, json};
 
 #[handler]
@@ -50,4 +50,14 @@ fn root_js() -> Markup {
 #[handler]
 pub async fn js_array() -> Json<Value> {
     Json(json!(["Apple", "Orange", "Banana", "Strawberry", "Mango"]))
+}
+
+pub fn home_page_route() -> Route {
+    Route::new()
+        .at("/", get(home_page))
+        .at("/array", get(js_array))
+        .at(
+            "/favicon.ico",
+            AssetFileEndpoint::new("/favicon/favicon.ico"),
+        )
 }

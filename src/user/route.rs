@@ -19,6 +19,8 @@ use poem::web::cookie::{Cookie, CookieJar};
 use poem::web::{CsrfToken, CsrfVerifier, Form, Redirect};
 use poem::{IntoResponse, Route, get, handler};
 
+pub const USER_PATH: &'static str = "/user/";
+
 #[handler]
 async fn display_user(
     UserDep(context_html_builder, user, _): UserDep<ContextHtmlBuilder>,

@@ -17,6 +17,8 @@ use poem::web::{Json, WithStatus};
 use poem::{IntoResponse, Response, Route, get, handler, post};
 use serde_json::{Value, json};
 
+pub const BUCKET_LIST_PATH: &'static str = "/bucket-list/";
+
 #[handler]
 async fn main_bucket_list(JustDep(context_html_builder, _): JustDep<ContextHtmlBuilder>) -> Markup {
     let title = "Bucket List";
