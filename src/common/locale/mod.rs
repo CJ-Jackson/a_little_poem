@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::common::context::{Context, ContextError, FromContext};
 use cjtoolkit_structured_validator::common::locale::{LocaleData, LocaleValue, ValidateErrorStore};
 use cjtoolkit_structured_validator::common::validation_collector::AsValidateErrorStore;
@@ -6,16 +7,35 @@ use poem::FromRequest;
 use poem::error::I18NError;
 use poem::i18n::{I18NArgs, I18NResources, Locale};
 use std::sync::Arc;
+use rust_embed::Embed;
+use crate::common::embed::EmbedAsString;
+
+#[derive(Embed)]
+#[folder = "asset/locale/"]
+struct LocaleAsset;
+
+impl LocaleAsset {
+    fn locale_map() -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        for value in Self::iter() {
+            let locale = value.split("/").next().unwrap_or_default();
+            let mut str = map.get(locale).map(|v: &String| v.to_string()).unwrap_or_default();
+            let file = Self::get(String::from(value.clone()).as_str());
+            str.push_str(&file.as_string());
+            str.push('\n');
+            map.insert(locale.to_string(), str);
+        }
+        map
+    }
+}
 
 pub fn build_resources() -> Result<I18NResources, I18NError> {
-    let english = include_str!("_locale/english.ftl");
-    let french = include_str!("_locale/french.ftl");
-
-    I18NResources::builder()
-        .add_ftl("en-GB", english)
-        .add_ftl("en-US", english)
-        .add_ftl("fr-FR", french)
-        .build()
+    let locale_map = LocaleAsset::locale_map();
+    let mut resources = I18NResources::builder();
+    for (locale, content) in locale_map {
+        resources = resources.add_ftl(locale, content);
+    }
+    resources.build()
 }
 
 impl FromContext for Locale {
@@ -88,5 +108,16 @@ where
 
     fn as_original_message(&self) -> Arc<[String]> {
         self.as_validate_store().as_original_message()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_locale_map() {
+        let map = LocaleAsset::locale_map();
+        dbg!(&map);
     }
 }
