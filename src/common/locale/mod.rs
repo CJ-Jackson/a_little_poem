@@ -1,17 +1,17 @@
-use std::collections::HashMap;
 use crate::common::context::{Context, ContextError, FromContext};
+use crate::common::embed::EmbedAsString;
 use cjtoolkit_structured_validator::common::locale::{LocaleData, LocaleValue, ValidateErrorStore};
 use cjtoolkit_structured_validator::common::validation_collector::AsValidateErrorStore;
 use error_stack::{Report, ResultExt};
 use poem::FromRequest;
 use poem::error::I18NError;
 use poem::i18n::{I18NArgs, I18NResources, Locale};
-use std::sync::Arc;
 use rust_embed::Embed;
-use crate::common::embed::EmbedAsString;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Embed)]
-#[folder = "asset/locale/"]
+#[folder = "$CARGO_MANIFEST_DIR/asset/locale/"]
 struct LocaleAsset;
 
 impl LocaleAsset {
@@ -19,7 +19,10 @@ impl LocaleAsset {
         let mut map = HashMap::new();
         for value in Self::iter() {
             let locale = value.split("/").next().unwrap_or_default();
-            let mut str = map.get(locale).map(|v: &String| v.to_string()).unwrap_or_default();
+            let mut str = map
+                .get(locale)
+                .map(|v: &String| v.to_string())
+                .unwrap_or_default();
             let file = Self::get(String::from(value.clone()).as_str());
             str.push_str(&file.as_string());
             str.push('\n');
@@ -108,16 +111,5 @@ where
 
     fn as_original_message(&self) -> Arc<[String]> {
         self.as_validate_store().as_original_message()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_locale_map() {
-        let map = LocaleAsset::locale_map();
-        dbg!(&map);
     }
 }

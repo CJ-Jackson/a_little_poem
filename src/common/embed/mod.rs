@@ -4,7 +4,7 @@ use rust_embed::{Embed, EmbeddedFile};
 pub const EMBED_PATH: &'static str = "/assets/";
 
 #[derive(Embed)]
-#[folder = "asset/embed/"]
+#[folder = "$CARGO_MANIFEST_DIR/asset/embed/"]
 #[exclude = "*.mjs"]
 pub struct Asset;
 
